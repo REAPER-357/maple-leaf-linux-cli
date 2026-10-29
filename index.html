@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" data-theme="black">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MapleLeaf CLI - Terminal Command Studio</title>
+
+    <!-- PWA Integration -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="small-icon.png">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Iconography -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --accent-color: #10b981;
+            --page-bg: #000000;
+            --page-fg: #f1f5f9;
+            --panel-bg: #18181b;
+            --bar-bg: rgba(0, 0, 0, 0.95);
+            --nav-bg: #09090b;
+            --bar-border: #27272a;
+        }
+        [data-theme="dark"] {
+            --page-bg: #0f172a;
+            --panel-bg: #1e293b;
+            --bar-bg: rgba(15, 23, 42, 0.95);
+            --nav-bg: #020617;
+            --bar-border: #1e293b;
+        }
+        [data-theme="light"] {
+            --page-bg: #f1f5f9;
+            --page-fg: #1e293b;
+            --panel-bg: #ffffff;
+            --bar-bg: rgba(255, 255, 255, 0.95);
+            --nav-bg: #e2e8f0;
+            --bar-border: #cbd5e1;
+        }
+
+        body { background-color: var(--page-bg); color: var(--page-fg); }
+        .panel-bg { background-color: var(--panel-bg); }
+        .app-header { background-color: var(--bar-bg); border-color: var(--bar-border); }
+        .app-nav { background-color: var(--nav-bg); border-color: var(--bar-border); }
+        .tab-btn.active { border-color: var(--accent-color); }
+
+        .accent-text { color: var(--accent-color) !important; }
+        .accent-bg { background-color: var(--accent-color) !important; }
+        .accent-border { border-color: var(--accent-color) !important; }
+        
+        input[type=checkbox] { accent-color: var(--accent-color); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        [data-theme="light"] .bg-black,
+        [data-theme="light"] .bg-black\/40,
+        [data-theme="light"] .bg-black\/50 { background-color: #f1f5f9; }
+        [data-theme="light"] .bg-zinc-800 { background-color: #e2e8f0; }
+        [data-theme="light"] .bg-zinc-900,
+        [data-theme="light"] .bg-zinc-900\/40 { background-color: #f8fafc; }
+        [data-theme="light"] .border-zinc-800,
+        [data-theme="light"] .border-zinc-700 { border-color: #cbd5e1; }
+        [data-theme="light"] .text-white:not(.accent-bg),
+        [data-theme="light"] .text-zinc-100,
+        [data-theme="light"] .text-zinc-200,
+        [data-theme="light"] .text-zinc-300 { color: #1e293b; }
+        [data-theme="light"] .text-zinc-400,
+        [data-theme="light"] .text-zinc-500 { color: #64748b; }
+    </style>
+</head>
+<body id="appBody" class="min-h-screen flex flex-col font-sans transition-colors duration-200 select-none pb-36">
+
+    <!-- TOP HEADER -->
+    <header id="appHeader" class="app-header sticky top-0 z-30 backdrop-blur-md border-b px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <img src="small-icon.png" alt="MapleLeaf Logo" class="w-9 h-9 rounded-xl object-cover border border-zinc-700 shadow-sm" onerror="this.onerror=null; this.outerHTML='<div class=\'w-9 h-9 rounded-xl bg-zinc-900 border border-zinc-700 flex items-center justify-center text-emerald-400\'><i class=\'fa-solid fa-leaf text-base\'></i></div>';" />
+            <div>
+                <h1 id="appTitleHeader" class="text-base font-bold tracking-tight leading-none text-emerald-400">MAPLELEAF CLI</h1>
+                <p class="text-[10px] text-zinc-400 font-medium">Terminal Command Studio</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button id="btnNewCustom" class="accent-bg hover:opacity-90 text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-md transition flex items-center space-x-2">
+                <i class="fa-solid fa-plus"></i>
+                <span class="hidden sm:inline">Add Command</span>
+            </button>
+            <button id="openSettingsBtn" aria-label="Open settings" class="p-2.5 rounded-xl text-zinc-300 hover:bg-zinc-800/50 transition">
+                <i class="fa-solid fa-gear text-lg"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- NAVIGATION TABS -->
+    <nav id="appNav" class="app-nav border-b px-4 pt-2">
+        <div class="flex space-x-1 sm:space-x-2 overflow-x-auto no-scrollbar max-w-4xl mx-auto" id="navTabs">
+            <button data-tab="favorites" class="tab-btn active px-4 py-2.5 text-xs font-semibold rounded-t-lg border-b-2 accent-text flex items-center space-x-2 whitespace-nowrap">
+                <i class="fa-solid fa-star"></i> <span>Favorites</span>
+            </button>
+            <button data-tab="utilities" class="tab-btn px-4 py-2.5 text-xs font-medium rounded-t-lg text-zinc-400 hover:text-zinc-200 flex items-center space-x-2 whitespace-nowrap">
+                <i class="fa-solid fa-sliders"></i> <span>Generators</span>
+            </button>
+            <button data-tab="custom" class="tab-btn px-4 py-2.5 text-xs font-medium rounded-t-lg text-zinc-400 hover:text-zinc-200 flex items-center space-x-2 whitespace-nowrap">
+                <i class="fa-solid fa-bookmark"></i> <span>Saved Snippets</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-[60] hidden px-4 py-2 rounded-xl bg-zinc-800 text-zinc-100 text-xs font-medium shadow-xl border border-zinc-700 max-w-[90vw] text-center"></div>
+
+    <!-- MAIN VIEW AREA -->
+    <main class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6">
+
+        <!-- GLOBAL SEARCH TOOLBAR -->
+        <div id="toolbar" class="panel-bg mb-4 p-3 rounded-2xl border border-zinc-800 shadow-sm flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2 flex-1 min-w-[200px]">
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-xs"></i>
+                    <input type="text" id="searchInput" aria-label="Search" placeholder="Search commands, flags, tools..." class="w-full pl-9 pr-3 py-1.5 bg-black border border-zinc-800 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500">
+                </div>
+            </div>
+            <div class="text-xs text-zinc-400 font-mono">
+                <span id="itemCount">0</span> items
+            </div>
+        </div>
+
+        <!-- 1. FAVORITES VIEW -->
+        <section id="view-favorites" class="tab-view space-y-2">
+            <div id="favoritesList" class="space-y-2"></div>
+        </section>
+
+        <!-- 2. UTILITIES / GENERATORS VIEW -->
+        <section id="view-utilities" class="tab-view hidden space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Utility Selector Left Panel -->
+                <div class="panel-bg p-3.5 rounded-2xl border border-zinc-800 shadow-sm space-y-2">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-400 px-1">Built-in Utilities</h2>
+                    <div id="utilityNavList" class="space-y-1 max-h-[500px] overflow-y-auto no-scrollbar"></div>
+                </div>
+
+                <!-- Generator Interactive Right Panel -->
+                <div class="md:col-span-2 panel-bg p-4 rounded-2xl border border-zinc-800 shadow-sm flex flex-col justify-between min-h-[400px]">
+                    <div>
+                        <div class="flex items-center justify-between border-b border-zinc-800 pb-3 mb-4">
+                            <div>
+                                <h2 id="activeUtilTitle" class="text-base font-bold text-zinc-100">Select Utility</h2>
+                                <p id="activeUtilDesc" class="text-xs text-zinc-400">Choose a generator from the sidebar</p>
+                            </div>
+                        </div>
+
+                        <div id="utilFormContainer" class="space-y-4">
+                            <p class="text-xs text-zinc-500 py-12 text-center italic">Select a tool to configure flags and parameters.</p>
+                        </div>
+                    </div>
+
+                    <!-- Built-in Generator Output Box -->
+                    <div class="mt-6 pt-4 border-t border-zinc-800">
+                        <div class="flex justify-between items-center mb-1.5">
+                            <span class="text-[10px] font-mono uppercase tracking-wider text-zinc-400">Generated String</span>
+                            <button onclick="copyGeneratedCommand()" id="btnCopyGen" class="accent-bg hover:opacity-90 text-white font-semibold text-xs px-3 py-1.5 rounded-xl transition cursor-pointer">
+                                <i class="fa-solid fa-copy mr-1"></i> Copy
+                            </button>
+                        </div>
+                        <div id="utilOutputBox" class="bg-black border border-zinc-800 rounded-xl p-3 font-mono text-xs accent-text break-all min-h-[44px] flex items-center">
+                            # Select a tool above...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. CUSTOM SNIPPETS VIEW -->
+        <section id="view-custom" class="tab-view hidden space-y-3">
+            <div id="customList" class="space-y-2"></div>
+        </section>
+
+    </main>
+
+    <!-- PERSISTENT FOOTER COMMAND ACTION BAR -->
+    <footer class="fixed bottom-8 left-0 right-0 z-20 max-w-3xl mx-auto px-4">
+        <div class="panel-bg bg-opacity-95 backdrop-blur-lg border border-zinc-800 rounded-2xl p-3.5 shadow-2xl flex flex-col space-y-2">
+            <div class="flex items-center justify-between text-[10px] text-zinc-400 font-mono">
+                <span class="uppercase tracking-widest accent-text font-bold"><i class="fa-solid fa-terminal mr-1"></i> Active Buffer</span>
+                <span id="cmdLength">0 chars</span>
+            </div>
+
+            <div class="flex items-center justify-between gap-3">
+                <div class="min-w-0 flex-1">
+                    <p id="activeBufferCmd" class="text-xs font-mono font-bold truncate text-zinc-100 accent-text bg-black/60 px-3 py-2 rounded-xl border border-zinc-800/80">
+                        sudo apt update -y && sudo apt upgrade -y
+                    </p>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <button id="btnQuickCopy" class="accent-bg hover:opacity-90 text-white font-semibold text-xs px-4 py-2 rounded-xl shadow-lg flex items-center space-x-1.5 transition">
+                        <i class="fa-solid fa-copy"></i> <span>Copy</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- FOOTER SIGNATURE -->
+    <div class="fixed bottom-1 left-0 right-0 z-10 text-center pointer-events-none">
+        <p class="text-[10px] font-mono tracking-widest text-zinc-600 uppercase">
+            Made by REAPER-357
+        </p>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settingsModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="panel-bg w-full max-w-sm rounded-3xl p-6 border border-zinc-800 shadow-2xl space-y-5 text-center relative">
+            <button class="closeModalBtn absolute top-4 right-4 text-zinc-400 hover:text-white text-lg" aria-label="Close">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <!-- Large Icon for Settings Top Middle -->
+            <img src="icon.png" alt="MapleLeaf CLI Logo" class="w-28 h-28 mx-auto rounded-2xl object-cover border-2 border-zinc-700 shadow-lg mb-2" onerror="this.onerror=null; this.outerHTML='<div class=\'w-20 h-20 mx-auto rounded-2xl bg-zinc-900 border border-zinc-700 flex items-center justify-center text-emerald-400 text-3xl shadow-lg mb-2\'><i class=\'fa-solid fa-leaf\'></i></div>';" />
+
+            <h3 class="text-base font-bold text-white">MapleLeaf CLI Settings</h3>
+            <p class="text-xs text-zinc-400">Customize layout theme and accent style</p>
+
+            <div class="bg-black/50 p-3 rounded-2xl border border-zinc-800 space-y-2 text-left">
+                <span class="text-xs font-semibold text-zinc-300">App Background Theme</span>
+                <div class="grid grid-cols-3 gap-2 pt-1">
+                    <button onclick="setAppTheme('black')" id="themeBtn-black" class="py-1.5 px-2 rounded-xl text-xs font-medium bg-zinc-900 border border-zinc-700 text-white transition">Pure Black</button>
+                    <button onclick="setAppTheme('dark')" id="themeBtn-dark" class="py-1.5 px-2 rounded-xl text-xs font-medium bg-zinc-800 border border-zinc-700 text-zinc-300 transition">Dark</button>
+                    <button onclick="setAppTheme('light')" id="themeBtn-light" class="py-1.5 px-2 rounded-xl text-xs font-medium bg-slate-200 border border-slate-300 text-slate-800 transition">Light</button>
+                </div>
+            </div>
+
+            <div class="bg-black/50 p-3 rounded-2xl border border-zinc-800 space-y-2 text-left">
+                <span class="text-xs font-semibold text-zinc-300">Accent Color</span>
+                <div class="flex items-center justify-around pt-2">
+                    <button aria-label="Green accent" onclick="setAccentColor('#10b981')" class="w-7 h-7 rounded-full bg-emerald-500 hover:scale-110 transition-transform shadow"></button>
+                    <button aria-label="Red accent" onclick="setAccentColor('#ef4444')" class="w-7 h-7 rounded-full bg-red-500 hover:scale-110 transition-transform shadow"></button>
+                    <button aria-label="Blue accent" onclick="setAccentColor('#3b82f6')" class="w-7 h-7 rounded-full bg-blue-500 hover:scale-110 transition-transform shadow"></button>
+                    <button aria-label="Purple accent" onclick="setAccentColor('#a855f7')" class="w-7 h-7 rounded-full bg-purple-500 hover:scale-110 transition-transform shadow"></button>
+                    <button aria-label="Amber accent" onclick="setAccentColor('#f59e0b')" class="w-7 h-7 rounded-full bg-amber-500 hover:scale-110 transition-transform shadow"></button>
+                </div>
+            </div>
+
+            <div class="text-center pt-1">
+                <p class="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Designed by REAPER-357</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CREATE/EDIT COMMAND MODAL -->
+    <div id="cmdModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="panel-bg w-full max-w-sm rounded-3xl p-6 border border-zinc-800 shadow-2xl space-y-4 text-left">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                <h3 id="cmdModalTitle" class="text-base font-bold text-white">Add Custom Command</h3>
+                <button class="closeModalBtn text-zinc-400 hover:text-white text-lg" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <input type="hidden" id="editingCmdId" value="">
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold mb-1 text-zinc-300">Label / Name</label>
+                    <input type="text" id="cmdLabelInput" placeholder="e.g. Quick System Update" class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold mb-1 text-zinc-300">Terminal Command String</label>
+                    <textarea id="cmdStringInput" rows="3" placeholder="e.g. sudo apt update && sudo apt upgrade -y" class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-xl font-mono text-xs text-emerald-400 focus:outline-none focus:border-emerald-500"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold mb-1 text-zinc-300">Category / Tag</label>
+                    <input type="text" id="cmdCategoryInput" placeholder="e.g. Maintenance" class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button class="closeModalBtn px-4 py-2 text-xs font-semibold bg-zinc-800 rounded-xl hover:bg-zinc-700 text-white transition">Cancel</button>
+                <button id="btnSaveCmd" class="px-4 py-2 text-xs font-semibold accent-bg text-white rounded-xl shadow-md transition">Save Command</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- APPLICATION ENGINE SCRIPT -->
+    <script>
+        /* ---------- Default Data & Registry ---------- */
+        const DEFAULT_FAVORITES = [
+            { id: 'fav_apt_quick', label: 'APT Fast Update & Upgrade', command: 'sudo apt update -y && sudo apt upgrade -y', category: 'System Maintenance', favorite: true },
+            { id: 'fav_flatpak_up', label: 'Flatpak Update All', command: 'flatpak update -y', category: 'Package Management', favorite: true },
+            { id: 'fav_clamscan_quick', label: 'ClamAV Scan Home Directory', command: 'clamscan -r -i /home/$USER', category: 'Security', favorite: true },
+            { id: 'fav_rsync_backup', label: 'Rsync Backup Folder', command: 'rsync -avzhP /source/ /destination/', category: 'File Operations', favorite: true }
+        ];
+
+        const UTILITIES_REGISTRY = [
+            {
+                id: 'rsync',
+                name: 'rsync',
+                category: 'File Operations',
+                desc: 'Fast and versatile local or remote file-copying tool',
+                inputs: [
+                    { id: 'mode', label: 'Operation Mode', type: 'select', options: [
+                        { label: 'Archive Mode (-a)', value: '-a' },
+                        { label: 'Basic Copy', value: '' }
+                    ]},
+                    { id: 'src', label: 'Source Path', type: 'text', placeholder: '/home/user/Documents/' },
+                    { id: 'dest', label: 'Destination Path', type: 'text', placeholder: '/media/user/Backup/' }
+                ],
+                flags: [
+                    { id: 'v', label: 'Verbose (-v)', flag: '-v' },
+                    { id: 'z', label: 'Compress Data (-z)', flag: '-z' },
+                    { id: 'h', label: 'Human Readable (-h)', flag: '-h' },
+                    { id: 'p', label: 'Show Progress (--progress)', flag: '--progress' },
+                    { id: 'dry', label: 'Dry Run Mode (--dry-run)', flag: '--dry-run' }
+                ],
+                builder: (vals, flags) => {
+                    const mode = vals.mode || '';
+                    const src = vals.src || '/source/';
+                    const dest = vals.dest || '/destination/';
+                    const flagStr = flags.join(' ');
+                    return `rsync ${mode} ${flagStr} "${src}" "${dest}"`.replace(/\s+/g, ' ').trim();
+                }
+            },
+            {
+                id: 'rclone',
+                name: 'rclone',
+                category: 'Cloud Storage',
+                desc: 'Sync files and directories to and from cloud remotes',
+                inputs: [
+                    { id: 'action', label: 'Action', type: 'select', options: [
+                        { label: 'copy (Copy files)', value: 'copy' },
+                        { label: 'sync (Make target match source)', value: 'sync' },
+                        { label: 'move (Move files)', value: 'move' },
+                        { label: 'check (Verify files)', value: 'check' }
+                    ]},
+                    { id: 'src', label: 'Source (local path or remote:bucket)', type: 'text', placeholder: 'remote:bucket' },
+                    { id: 'dest', label: 'Destination (local path or remote:bucket)', type: 'text', placeholder: '/local/folder' }
+                ],
+                flags: [
+                    { id: 'progress', label: 'Show Progress (--progress)', flag: '--progress' },
+                    { id: 'dry', label: 'Dry Run (--dry-run)', flag: '--dry-run' },
+                    { id: 'stats', label: 'Stats Interval (--stats 5s)', flag: '--stats 5s' }
+                ],
+                builder: (vals, flags) => {
+                    const action = vals.action || 'copy';
+                    const src = vals.src || 'remote:source';
+                    const dest = vals.dest || '/destination';
+                    const flagStr = flags.join(' ');
+                    return `rclone ${action} "${src}" "${dest}" ${flagStr}`.replace(/\s+/g, ' ').trim();
+                }
+            },
+            {
+                id: 'clamscan',
+                name: 'clamscan',
+                category: 'Security',
+                desc: 'Command line anti-virus scanner engine',
+                inputs: [
+                    { id: 'path', label: 'Scan Target Directory', type: 'text', placeholder: '/home/user/Downloads' }
+                ],
+                flags: [
+                    { id: 'r', label: 'Recursive Subdirectories (-r)', flag: '-r' },
+                    { id: 'i', label: 'Infected Files Only (-i)', flag: '-i' },
+                    { id: 'bell', label: 'Sound Alarm Bell (--bell)', flag: '--bell' },
+                    { id: 'remove', label: 'Remove Infected Files (--remove)', flag: '--remove' }
+                ],
+                builder: (vals, flags) => {
+                    const path = vals.path || '/path/to/scan';
+                    const flagStr = flags.join(' ');
+                    return `clamscan ${flagStr} "${path}"`.replace(/\s+/g, ' ').trim();
+                }
+            },
+            {
+                id: 'tar',
+                name: 'tar',
+                category: 'Archives',
+                desc: 'Archive file compression utility',
+                inputs: [
+                    { id: 'action', label: 'Operation', type: 'select', options: [
+                        { label: 'Create Compressed Archive (-czvf)', value: '-czvf' },
+                        { label: 'Extract Archive (-xzvf)', value: '-xzvf' },
+                        { label: 'List Contents (-ztvf)', value: '-ztvf' }
+                    ]},
+                    { id: 'archive', label: 'Archive Filename (.tar.gz)', type: 'text', placeholder: 'backup.tar.gz' },
+                    { id: 'target', label: 'Target Folder/File', type: 'text', placeholder: '/path/to/folder' }
+                ],
+                flags: [],
+                builder: (vals) => {
+                    const action = vals.action || '-czvf';
+                    const archive = vals.archive || 'archive.tar.gz';
+                    const target = vals.target || 'folder';
+                    return `tar ${action} "${archive}" "${target}"`.trim();
+                }
+            },
+            {
+                id: 'apt',
+                name: 'apt (Debian/Mint)',
+                category: 'Package Management',
+                desc: 'Debian/Mint package management utility',
+                inputs: [
+                    { id: 'action', label: 'Action', type: 'select', options: [
+                        { label: 'update (Refresh lists)', value: 'update' },
+                        { label: 'upgrade (Upgrade packages)', value: 'upgrade' },
+                        { label: 'install (Install package)', value: 'install' },
+                        { label: 'remove (Uninstall package)', value: 'remove' },
+                        { label: 'autoremove (Clean orphaned packages)', value: 'autoremove' }
+                    ]},
+                    { id: 'pkg', label: 'Package Name (optional)', type: 'text', placeholder: 'git' }
+                ],
+                flags: [
+                    { id: 'y', label: 'Assume Yes (-y)', flag: '-y' }
+                ],
+                builder: (vals, flags) => {
+                    const action = vals.action || 'update';
+                    const pkg = vals.pkg ? ` ${vals.pkg}` : '';
+                    const flagStr = flags.length ? ` ${flags.join(' ')}` : '';
+                    return `sudo apt ${action}${pkg}${flagStr}`.trim();
+                }
+            }
+        ];
+
+        /* ---------- State ---------- */
+        let customCommands = safeParse(localStorage.getItem('mapleleaf_custom_cmds'), DEFAULT_FAVORITES);
+        let activeUtility = UTILITIES_REGISTRY[0];
+        let currentBufferText = DEFAULT_FAVORITES[0].command;
+
+        /* ---------- Elements ---------- */
+        const searchInput = document.getElementById('searchInput');
+        const itemCountEl = document.getElementById('itemCount');
+        const activeBufferCmd = document.getElementById('activeBufferCmd');
+        const cmdLengthEl = document.getElementById('cmdLength');
+        const toastEl = document.getElementById('toast');
+
+        const settingsModal = document.getElementById('settingsModal');
+        const openSettingsBtn = document.getElementById('openSettingsBtn');
+        const cmdModal = document.getElementById('cmdModal');
+        const btnNewCustom = document.getElementById('btnNewCustom');
+        const btnSaveCmd = document.getElementById('btnSaveCmd');
+
+        /* ---------- Helpers ---------- */
+        function safeParse(str, fallback) {
+            try { return str ? JSON.parse(str) : fallback; } catch (e) { return fallback; }
+        }
+
+        function escapeHtml(str) {
+            return String(str == null ? '' : str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+
+        let toastTimer = null;
+        function showToast(msg) {
+            toastEl.textContent = msg;
+            toastEl.classList.remove('hidden');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toastEl.classList.add('hidden'), 2200);
+        }
+
+        function setBuffer(text) {
+            currentBufferText = text;
+            activeBufferCmd.textContent = text;
+            cmdLengthEl.textContent = `${text.length} chars`;
+        }
+
+        /* ---------- Init ---------- */
+        window.addEventListener('DOMContentLoaded', () => {
+            initPreferences();
+            setupTabNavigation();
+            renderCurrentView();
+            initUtilityTab();
+            setBuffer(currentBufferText);
+
+            // Register Service Worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js').catch(() => {});
+            }
+        });
+
+        /* ---------- Theme & Accent ---------- */
+        function setAccentColor(hex) {
+            localStorage.setItem('lt_accent_color', hex);
+            document.documentElement.style.setProperty('--accent-color', hex);
+            document.getElementById('appTitleHeader').style.color = hex;
+        }
+
+        function setAppTheme(theme) {
+            if (!['black', 'dark', 'light'].includes(theme)) theme = 'black';
+            localStorage.setItem('lt_app_theme', theme);
+            document.documentElement.setAttribute('data-theme', theme);
+            document.documentElement.classList.toggle('dark', theme !== 'light');
+        }
+
+        function initPreferences() {
+            setAccentColor(localStorage.getItem('lt_accent_color') || '#10b981');
+            setAppTheme(localStorage.getItem('lt_app_theme') || 'black');
+        }
+
+        /* ---------- Tab Navigation ---------- */
+        function setupTabNavigation() {
+            const tabs = document.querySelectorAll('#navTabs button');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => {
+                        t.classList.remove('active', 'border-b-2', 'accent-text', 'font-semibold');
+                        t.classList.add('text-zinc-400', 'font-medium');
+                    });
+                    tab.classList.add('active', 'border-b-2', 'accent-text', 'font-semibold');
+                    tab.classList.remove('text-zinc-400', 'font-medium');
+
+                    const target = tab.getAttribute('data-tab');
+                    document.querySelectorAll('.tab-view').forEach(v => v.classList.add('hidden'));
+                    document.getElementById(`view-${target}`).classList.remove('hidden');
+                    renderCurrentView();
+                });
+            });
+            searchInput.addEventListener('input', renderCurrentView);
+        }
+
+        function getActiveTab() {
+            const active = document.querySelector('#navTabs button.active');
+            return active ? active.getAttribute('data-tab') : 'favorites';
+        }
+
+        /* ---------- Render Views ---------- */
+        function renderCurrentView() {
+            const tab = getActiveTab();
+            const filter = searchInput.value.toLowerCase().trim();
+
+            if (tab === 'favorites') renderFavoritesView(filter);
+            else if (tab === 'utilities') renderUtilitiesSidebar(filter);
+            else if (tab === 'custom') renderCustomView(filter);
+        }
+
+        function renderFavoritesView(filter = '') {
+            const container = document.getElementById('favoritesList');
+            container.innerHTML = '';
+
+            const favs = customCommands.filter(c => c.favorite && (
+                c.label.toLowerCase().includes(filter) ||
+                c.command.toLowerCase().includes(filter) ||
+                c.category.toLowerCase().includes(filter)
+            ));
+
+            itemCountEl.textContent = favs.length;
+
+            if (!favs.length) {
+                container.innerHTML = `<div class="text-center py-12 text-zinc-500 text-xs">No starred favorite commands yet.</div>`;
+                return;
+            }
+
+            const frag = document.createDocumentFragment();
+            favs.forEach(cmd => {
+                const card = document.createElement('div');
+                card.className = "panel-bg p-3.5 rounded-2xl border border-zinc-800 shadow-sm transition flex items-center justify-between space-x-3 cursor-pointer hover:border-zinc-700";
+                card.innerHTML = `
+                    <div class="min-w-0 flex-1" onclick="copyAndBuffer('${escapeHtml(cmd.command)}')">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-bold text-zinc-100">${escapeHtml(cmd.label)}</span>
+                            <span class="text-[9px] font-mono px-2 py-0.5 rounded-md bg-black/60 text-zinc-400 border border-zinc-800">${escapeHtml(cmd.category)}</span>
+                        </div>
+                        <p class="text-xs font-mono accent-text truncate mt-1">${escapeHtml(cmd.command)}</p>
+                    </div>
+                    <div class="flex items-center space-x-1.5 text-zinc-400">
+                        <button onclick="event.stopPropagation(); toggleFav('${cmd.id}')" class="text-amber-400 p-2 text-sm" title="Unstar Favorite">
+                            <i class="fa-solid fa-star"></i>
+                        </button>
+                        <button onclick="event.stopPropagation(); copyAndBuffer('${escapeHtml(cmd.command)}')" class="p-2 text-zinc-300 hover:text-white text-xs" title="Copy Command">
+                            <i class="fa-solid fa-copy"></i>
+                        </button>
+                    </div>
+                `;
+                frag.appendChild(card);
+            });
+            container.appendChild(frag);
+        }
+
+        function renderCustomView(filter = '') {
+            const container = document.getElementById('customList');
+            container.innerHTML = '';
+
+            const cmds = customCommands.filter(c => 
+                c.label.toLowerCase().includes(filter) ||
+                c.command.toLowerCase().includes(filter) ||
+                c.category.toLowerCase().includes(filter)
+            );
+
+            itemCountEl.textContent = cmds.length;
+
+            if (!cmds.length) {
+                container.innerHTML = `<div class="text-center py-12 text-zinc-500 text-xs">No saved command snippets.</div>`;
+                return;
+            }
+
+            const frag = document.createDocumentFragment();
+            cmds.forEach(cmd => {
+                const card = document.createElement('div');
+                card.className = "panel-bg p-3.5 rounded-2xl border border-zinc-800 shadow-sm transition flex items-center justify-between space-x-3 cursor-pointer hover:border-zinc-700";
+                card.innerHTML = `
+                    <div class="min-w-0 flex-1" onclick="copyAndBuffer('${escapeHtml(cmd.command)}')">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-bold text-zinc-100">${escapeHtml(cmd.label)}</span>
+                            <span class="text-[9px] font-mono px-2 py-0.5 rounded-md bg-black/60 text-zinc-400 border border-zinc-800">${escapeHtml(cmd.category)}</span>
+                        </div>
+                        <p class="text-xs font-mono accent-text truncate mt-1">${escapeHtml(cmd.command)}</p>
+                    </div>
+                    <div class="flex items-center space-x-1 text-zinc-400">
+                        <button onclick="event.stopPropagation(); toggleFav('${cmd.id}')" class="${cmd.favorite ? 'text-amber-400' : 'text-zinc-600 hover:text-amber-400'} p-2 text-xs" title="Star Favorite">
+                            <i class="fa-solid fa-star"></i>
+                        </button>
+                        <button onclick="event.stopPropagation(); deleteCmd('${cmd.id}')" class="hover:text-red-500 p-2 text-xs" title="Delete">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                `;
+                frag.appendChild(card);
+            });
+            container.appendChild(frag);
+        }
+
+        /* ---------- Utility Generator Logic ---------- */
+        function initUtilityTab() {
+            renderUtilitiesSidebar('');
+            if (UTILITIES_REGISTRY.length) selectUtility(UTILITIES_REGISTRY[0].id);
+        }
+
+        function renderUtilitiesSidebar(filter = '') {
+            const container = document.getElementById('utilityNavList');
+            container.innerHTML = '';
+
+            const list = UTILITIES_REGISTRY.filter(u => 
+                u.name.toLowerCase().includes(filter) || 
+                u.desc.toLowerCase().includes(filter)
+            );
+
+            list.forEach(u => {
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left p-2.5 rounded-xl text-xs font-semibold transition flex flex-col ${activeUtility?.id === u.id ? 'bg-black/60 border border-emerald-500/50 accent-text' : 'hover:bg-zinc-800/50 text-zinc-300'}`;
+                btn.onclick = () => selectUtility(u.id);
+                btn.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span>${escapeHtml(u.name)}</span>
+                        <span class="text-[9px] text-zinc-500 font-mono">${escapeHtml(u.category)}</span>
+                    </div>
+                `;
+                container.appendChild(btn);
+            });
+        }
+
+        function selectUtility(id) {
+            activeUtility = UTILITIES_REGISTRY.find(u => u.id === id);
+            renderUtilitiesSidebar(searchInput.value.toLowerCase().trim());
+
+            document.getElementById('activeUtilTitle').textContent = activeUtility.name;
+            document.getElementById('activeUtilDesc').textContent = activeUtility.desc;
+
+            const form = document.getElementById('utilFormContainer');
+            form.innerHTML = '';
+
+            // Inputs
+            if (activeUtility.inputs) {
+                activeUtility.inputs.forEach(inp => {
+                    const wrap = document.createElement('div');
+                    wrap.innerHTML = `<label class="block text-xs font-semibold text-zinc-300 mb-1">${inp.label}</label>`;
+
+                    if (inp.type === 'text') {
+                        const el = document.createElement('input');
+                        el.type = 'text';
+                        el.id = `u_inp_${inp.id}`;
+                        el.placeholder = inp.placeholder || '';
+                        el.className = 'w-full bg-black border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500';
+                        el.oninput = updateGenOutput;
+                        wrap.appendChild(el);
+                    } else if (inp.type === 'select') {
+                        const sel = document.createElement('select');
+                        sel.id = `u_inp_${inp.id}`;
+                        sel.className = 'w-full bg-black border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500';
+                        inp.options.forEach(opt => {
+                            const o = document.createElement('option');
+                            o.value = opt.value;
+                            o.textContent = opt.label;
+                            sel.appendChild(o);
+                        });
+                        sel.onchange = updateGenOutput;
+                        wrap.appendChild(sel);
+                    }
+                    form.appendChild(wrap);
+                });
+            }
+
+            // Flags
+            if (activeUtility.flags && activeUtility.flags.length) {
+                const head = document.createElement('div');
+                head.className = 'text-xs font-bold text-zinc-400 pt-2 uppercase tracking-wider';
+                head.textContent = 'Command Switches & Flags';
+                form.appendChild(head);
+
+                const grid = document.createElement('div');
+                grid.className = 'grid grid-cols-1 sm:grid-cols-2 gap-2';
+
+                activeUtility.flags.forEach(f => {
+                    const lbl = document.createElement('label');
+                    lbl.className = 'flex items-center gap-2 text-xs text-zinc-300 bg-black/40 border border-zinc-800 p-2.5 rounded-xl cursor-pointer hover:border-zinc-700';
+                    lbl.innerHTML = `
+                        <input type="checkbox" id="u_flag_${f.id}" value="${f.flag}" onchange="updateGenOutput()" class="rounded border-zinc-700 w-4 h-4">
+                        <span>${f.label}</span>
+                    `;
+                    grid.appendChild(lbl);
+                });
+                form.appendChild(grid);
+            }
+
+            updateGenOutput();
+        }
+
+        function updateGenOutput() {
+            if (!activeUtility) return;
+
+            const vals = {};
+            if (activeUtility.inputs) {
+                activeUtility.inputs.forEach(i => {
+                    const el = document.getElementById(`u_inp_${i.id}`);
+                    if (el) vals[i.id] = el.value;
+                });
+            }
+
+            const flags = [];
+            if (activeUtility.flags) {
+                activeUtility.flags.forEach(f => {
+                    const el = document.getElementById(`u_flag_${f.id}`);
+                    if (el && el.checked) flags.push(f.flag);
+                });
+            }
+
+            const cmd = activeUtility.builder(vals, flags);
+            document.getElementById('utilOutputBox').textContent = cmd;
+            setBuffer(cmd);
+        }
+
+        function copyGeneratedCommand() {
+            const text = document.getElementById('utilOutputBox').textContent;
+            copyAndBuffer(text);
+        }
+
+        /* ---------- Actions & Clipboard ---------- */
+        function copyAndBuffer(text) {
+            setBuffer(text);
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Copied to clipboard!');
+            }).catch(() => {
+                showToast('Buffered to action bar!');
+            });
+        }
+
+        document.getElementById('btnQuickCopy').addEventListener('click', () => {
+            copyAndBuffer(currentBufferText);
+        });
+
+        function toggleFav(id) {
+            const cmd = customCommands.find(c => c.id === id);
+            if (cmd) {
+                cmd.favorite = !cmd.favorite;
+                saveCustomCmds();
+                renderCurrentView();
+                showToast(cmd.favorite ? 'Added to Favorites' : 'Removed from Favorites');
+            }
+        }
+
+        function deleteCmd(id) {
+            customCommands = customCommands.filter(c => c.id !== id);
+            saveCustomCmds();
+            renderCurrentView();
+            showToast('Deleted command');
+        }
+
+        function saveCustomCmds() {
+            localStorage.setItem('mapleleaf_custom_cmds', JSON.stringify(customCommands));
+        }
+
+        /* ---------- Modals ---------- */
+        btnNewCustom.addEventListener('click', () => {
+            document.getElementById('cmdLabelInput').value = '';
+            document.getElementById('cmdStringInput').value = '';
+            document.getElementById('cmdCategoryInput').value = 'General';
+            cmdModal.classList.remove('hidden');
+        });
+
+        btnSaveCmd.addEventListener('click', () => {
+            const label = document.getElementById('cmdLabelInput').value.trim();
+            const command = document.getElementById('cmdStringInput').value.trim();
+            const category = document.getElementById('cmdCategoryInput').value.trim() || 'General';
+
+            if (!label || !command) return alert('Enter both label and command.');
+
+            customCommands.push({
+                id: `cmd_${Date.now()}`,
+                label,
+                command,
+                category,
+                favorite: false
+            });
+
+            saveCustomCmds();
+            cmdModal.classList.add('hidden');
+            renderCurrentView();
+            showToast('Saved new command snippet');
+        });
+
+        openSettingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
+
+        document.querySelectorAll('.closeModalBtn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                settingsModal.classList.add('hidden');
+                cmdModal.classList.add('hidden');
+            });
+        });
+    </script>
+</body>
+</html>
