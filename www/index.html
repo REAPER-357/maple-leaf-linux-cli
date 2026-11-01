@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" data-theme="black">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MapleLeaf CLI - Terminal Command Studio</title>
+
+    <!-- PWA Integration -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="small-icon.png">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+
+    <style>
+        :root {
+            --accent-color: #10b981;
+            --page-bg: #000000; --page-fg: #f1f5f9; --panel-bg: #18181b;
+            --inset-bg: rgba(0,0,0,.6); --field-bg: #000000;
+            --bar-bg: rgba(0,0,0,.95); --nav-bg: #09090b; --bar-border: #27272a; --muted: #a1a1aa;
+        }
+        [data-theme="dark"] {
+            --page-bg: #0f172a; --panel-bg: #1e293b; --inset-bg: rgba(2,6,23,.55); --field-bg: #0b1222;
+            --bar-bg: rgba(15,23,42,.95); --nav-bg: #020617; --bar-border: #334155; --muted: #94a3b8;
+        }
+        [data-theme="light"] {
+            --page-bg: #f1f5f9; --page-fg: #1e293b; --panel-bg: #ffffff; --inset-bg: #f1f5f9; --field-bg: #f8fafc;
+            --bar-bg: rgba(255,255,255,.95); --nav-bg: #e2e8f0; --bar-border: #cbd5e1; --muted: #64748b;
+        }
+        body { background: var(--page-bg); color: var(--page-fg); }
+        .panel-bg { background: var(--panel-bg); }
+        .app-header { background: var(--bar-bg); border-color: var(--bar-border); }
+        .app-nav { background: var(--nav-bg); border-color: var(--bar-border); }
+        .bd { border-color: var(--bar-border); }
+        .muted { color: var(--muted); }
+        .txt { color: var(--page-fg); }
+        .inset { background: var(--inset-bg); }
+        .accent-text { color: var(--accent-color) !important; }
+        .accent-bg { background-color: var(--accent-color) !important; color: #fff; }
+        .accent-border { border-color: var(--accent-color) !important; }
+        .tab-btn { color: var(--muted); border-bottom: 2px solid transparent; }
+        .tab-btn.active { color: var(--accent-color); border-color: var(--accent-color); font-weight: 700; }
+
+        .field { background: var(--field-bg); border: 1px solid var(--bar-border); color: var(--page-fg); border-radius: .75rem; padding: .5rem .75rem; font-size: .75rem; width: 100%; }
+        .field:focus { outline: none; border-color: var(--accent-color); }
+        select.field option { background: var(--panel-bg); color: var(--page-fg); }
+        .btn { display: inline-flex; align-items: center; gap: .375rem; font-size: .75rem; font-weight: 600; padding: .5rem .75rem; border-radius: .75rem; transition: .15s; cursor: pointer; }
+        .btn:hover { filter: brightness(1.12); }
+        .btn-ghost { background: var(--inset-bg); border: 1px solid var(--bar-border); color: var(--page-fg); }
+        .tag { font-size: 9px; font-family: ui-monospace, monospace; padding: 2px 8px; border-radius: 6px; background: var(--inset-bg); color: var(--muted); border: 1px solid var(--bar-border); }
+        .chip { font-size: 11px; padding: 4px 11px; border-radius: 999px; border: 1px solid var(--bar-border); background: var(--inset-bg); color: var(--muted); white-space: nowrap; cursor: pointer; }
+        .chip.on { border-color: var(--accent-color); color: var(--accent-color); font-weight: 700; }
+        input[type=checkbox] { accent-color: var(--accent-color); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .card:hover { filter: brightness(1.1); }
+        pre.out { white-space: pre-wrap; word-break: break-all; }
+
+        /* Local icon system: SVGs from assets/icons/*.svg (Lucide), recoloured via CSS mask */
+        .ic { display: inline-block; width: 1.1em; height: 1.1em; vertical-align: -0.17em; flex: none; }
+        .ic.on { background-color: currentColor; -webkit-mask: var(--src) center / contain no-repeat; mask: var(--src) center / contain no-repeat; }
+    </style>
+</head>
+<body id="appBody" class="min-h-screen flex flex-col font-sans transition-colors duration-200 pb-48">
+
+    <!-- TOP HEADER -->
+    <header class="app-header sticky top-0 z-30 backdrop-blur-md border-b px-3 sm:px-4 py-3 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-3 min-w-0">
+            <img src="small-icon.png" alt="MapleLeaf Logo" class="w-9 h-9 rounded-xl object-cover border bd shadow-sm" onerror="this.onerror=null; this.outerHTML='<div class=\'w-9 h-9 rounded-xl inset border bd flex items-center justify-center accent-text\'><i class=\'ic\' data-i=\'leaf\'></i></div>';" />
+            <div class="min-w-0 hidden sm:block">
+                <h1 id="appTitleHeader" class="text-base font-bold tracking-tight leading-none accent-text">MAPLELEAF CLI</h1>
+                <p class="text-[10px] muted font-medium">Terminal Command Studio</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="distroBtn" class="btn btn-ghost" aria-label="Switch distro">
+                <span id="distroDot" class="w-2.5 h-2.5 rounded-full inline-block"></span>
+                <span id="distroLabel">Debian family</span>
+                <i class="ic" data-i="chevron-down"></i>
+            </button>
+            <button id="btnNewCustom" class="btn accent-bg shadow-md" aria-label="Add snippet">
+                <i class="ic" data-i="plus"></i><span class="hidden sm:inline">Add</span>
+            </button>
+            <button id="openSettingsBtn" aria-label="Open settings" class="p-2.5 rounded-xl muted hover:opacity-80 transition">
+                <i class="ic text-lg" data-i="settings"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- NAVIGATION TABS -->
+    <nav class="app-nav border-b px-2 sm:px-4 pt-2">
+        <div class="flex gap-1 overflow-x-auto no-scrollbar max-w-5xl mx-auto" id="navTabs">
+            <button data-tab="favorites" class="tab-btn active px-3 sm:px-4 py-2.5 text-xs rounded-t-lg flex items-center gap-2 whitespace-nowrap"><i class="ic" data-i="star"></i><span>Favorites</span></button>
+            <button data-tab="utilities" class="tab-btn px-3 sm:px-4 py-2.5 text-xs rounded-t-lg flex items-center gap-2 whitespace-nowrap"><i class="ic" data-i="sliders-horizontal"></i><span>Generators</span></button>
+            <button data-tab="library" class="tab-btn px-3 sm:px-4 py-2.5 text-xs rounded-t-lg flex items-center gap-2 whitespace-nowrap"><i class="ic" data-i="book-open"></i><span>Library</span></button>
+            <button data-tab="custom" class="tab-btn px-3 sm:px-4 py-2.5 text-xs rounded-t-lg flex items-center gap-2 whitespace-nowrap"><i class="ic" data-i="bookmark"></i><span>Snippets</span></button>
+            <button data-tab="script" class="tab-btn px-3 sm:px-4 py-2.5 text-xs rounded-t-lg flex items-center gap-2 whitespace-nowrap"><i class="ic" data-i="file-code"></i><span>Script</span></button>
+            <button data-tab="history" class="tab-btn px-3 sm:px-4 py-2.5 text-xs rounded-t-lg flex items-center gap-2 whitespace-nowrap"><i class="ic" data-i="history"></i><span>History</span></button>
+        </div>
+    </nav>
+
+    <!-- TOAST -->
+    <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-[70] hidden px-4 py-2 rounded-xl panel-bg txt text-xs font-medium shadow-xl border bd max-w-[90vw] text-center"></div>
+
+    <!-- MAIN -->
+    <main class="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-6">
+
+        <div id="toolbar" class="panel-bg mb-4 p-3 rounded-2xl border bd shadow-sm flex items-center justify-between gap-3">
+            <div class="relative flex-1">
+                <i class="ic absolute left-3 top-1/2 -translate-y-1/2 muted text-xs" data-i="search"></i>
+                <input type="text" id="searchInput" aria-label="Search" placeholder="Search commands, flags, tools...  ( / )" class="field !pl-9 !py-1.5">
+            </div>
+            <div class="text-xs muted font-mono whitespace-nowrap"><span id="itemCount">0</span> items</div>
+        </div>
+
+        <!-- FAVORITES -->
+        <section id="view-favorites" class="tab-view space-y-4">
+            <div>
+                <h2 class="text-[11px] font-bold uppercase tracking-wider muted mb-2 flex items-center gap-1.5"><i class="ic accent-text" data-i="zap"></i> Quick actions &middot; <span id="qaDistro"></span></h2>
+                <div id="quickGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+            </div>
+            <div>
+                <h2 class="text-[11px] font-bold uppercase tracking-wider muted mb-2 flex items-center gap-1.5"><i class="ic text-amber-400" data-i="star"></i> Starred</h2>
+                <div id="favoritesList" class="space-y-2"></div>
+            </div>
+        </section>
+
+        <!-- GENERATORS -->
+        <section id="view-utilities" class="tab-view hidden">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="panel-bg p-3 rounded-2xl border bd shadow-sm space-y-2 min-w-0">
+                    <h2 class="text-xs font-bold uppercase tracking-wider muted px-1 hidden md:block">Generators</h2>
+                    <div id="utilityNavList" class="flex md:flex-col gap-1 overflow-x-auto md:overflow-y-auto md:max-h-[560px] no-scrollbar"></div>
+                </div>
+                <div class="md:col-span-2 panel-bg p-4 rounded-2xl border bd shadow-sm flex flex-col justify-between min-h-[400px]">
+                    <div>
+                        <div class="border-b bd pb-3 mb-4">
+                            <h2 id="activeUtilTitle" class="text-base font-bold txt">Select Utility</h2>
+                            <p id="activeUtilDesc" class="text-xs muted">Choose a generator</p>
+                        </div>
+                        <div id="utilFormContainer" class="space-y-4"></div>
+                    </div>
+                    <div class="mt-6 pt-4 border-t bd">
+                        <div class="flex justify-between items-center mb-1.5 gap-2">
+                            <span class="text-[10px] font-mono uppercase tracking-wider muted">Generated</span>
+                            <div class="flex gap-1.5">
+                                <button data-act="genscript" class="btn btn-ghost !py-1.5" title="Add to script"><i class="ic" data-i="list-plus"></i></button>
+                                <button data-act="gensave" class="btn btn-ghost !py-1.5" title="Save as snippet"><i class="ic" data-i="bookmark"></i></button>
+                                <button data-act="gencopy" class="btn accent-bg !py-1.5"><i class="ic" data-i="copy"></i> Copy</button>
+                            </div>
+                        </div>
+                        <pre id="utilOutputBox" class="out inset border bd rounded-xl p-3 font-mono text-xs accent-text min-h-[44px]"></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- LIBRARY -->
+        <section id="view-library" class="tab-view hidden space-y-3">
+            <div id="libChips" class="flex gap-1.5 overflow-x-auto no-scrollbar pb-1"></div>
+            <div id="libList" class="space-y-2"></div>
+        </section>
+
+        <!-- SNIPPETS -->
+        <section id="view-custom" class="tab-view hidden space-y-3">
+            <div class="flex items-center gap-2 flex-wrap">
+                <button data-act="snipfilter" id="snipFilterChip" class="chip">Only for this distro</button>
+                <span class="text-[11px] muted">Tip: use <code class="font-mono accent-text">{{name}}</code> or <code class="font-mono accent-text">{{name:default}}</code> for fill-in variables.</span>
+            </div>
+            <div id="customList" class="space-y-2"></div>
+        </section>
+
+        <!-- SCRIPT BUILDER -->
+        <section id="view-script" class="tab-view hidden space-y-3">
+            <div class="panel-bg p-3 rounded-2xl border bd space-y-3">
+                <div class="flex flex-wrap items-center gap-2">
+                    <select id="scriptMode" class="field !w-auto">
+                        <option value="lines">Script file (one per line)</option>
+                        <option value="and">Chain with &amp;&amp;</option>
+                        <option value="semi">Chain with ;</option>
+                    </select>
+                    <label class="flex items-center gap-1.5 text-xs txt"><input type="checkbox" id="scriptStrict" checked> Shebang + strict mode</label>
+                    <div class="flex-1"></div>
+                    <button data-act="scriptadd" class="btn btn-ghost"><i class="ic" data-i="plus"></i> Add buffer</button>
+                    <button data-act="scriptclear" class="btn btn-ghost"><i class="ic" data-i="trash-2"></i> Clear</button>
+                </div>
+                <div id="scriptList" class="space-y-2"></div>
+            </div>
+            <div class="panel-bg p-3 rounded-2xl border bd space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-mono uppercase tracking-wider muted">Output</span>
+                    <div class="flex gap-1.5">
+                        <button data-act="scriptdl" class="btn btn-ghost !py-1.5"><i class="ic" data-i="download"></i> .sh</button>
+                        <button data-act="scriptcopy" class="btn accent-bg !py-1.5"><i class="ic" data-i="copy"></i> Copy</button>
+                    </div>
+                </div>
+                <pre id="scriptOut" class="out inset border bd rounded-xl p-3 font-mono text-xs accent-text min-h-[60px]"></pre>
+            </div>
+        </section>
+
+        <!-- HISTORY -->
+        <section id="view-history" class="tab-view hidden space-y-3">
+            <div class="flex justify-end"><button data-act="clearhist" class="btn btn-ghost"><i class="ic" data-i="trash-2"></i> Clear history</button></div>
+            <div id="historyList" class="space-y-2"></div>
+        </section>
+    </main>
+
+    <!-- BUFFER BAR -->
+    <footer class="fixed bottom-6 left-0 right-0 z-20 max-w-3xl mx-auto px-3">
+        <div class="panel-bg border bd rounded-2xl p-3 shadow-2xl space-y-2">
+            <div id="dangerBar" class="hidden items-center gap-2 text-[11px] font-semibold text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-2.5 py-1.5">
+                <i class="ic" data-i="triangle-alert"></i> Potentially destructive. Double-check paths and devices before running.
+            </div>
+            <div class="flex items-center justify-between text-[10px] muted font-mono">
+                <span class="uppercase tracking-widest accent-text font-bold flex items-center gap-1"><i class="ic" data-i="terminal"></i> Active buffer</span>
+                <span id="cmdLength">0 chars</span>
+            </div>
+            <div class="flex items-end gap-2">
+                <textarea id="bufferInput" rows="1" spellcheck="false" autocapitalize="off" autocorrect="off" class="field font-mono !text-xs accent-text resize-none flex-1 max-h-28" aria-label="Command buffer"></textarea>
+                <div class="flex gap-1.5">
+                    <button data-act="bufscript" class="btn btn-ghost" title="Add to script"><i class="ic" data-i="list-plus"></i></button>
+                    <button data-act="bufsave" class="btn btn-ghost" title="Save as snippet"><i class="ic" data-i="bookmark"></i></button>
+                    <button id="btnQuickCopy" class="btn accent-bg shadow-lg"><i class="ic" data-i="copy"></i><span class="hidden sm:inline">Copy</span></button>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <div class="fixed bottom-1 left-0 right-0 z-10 text-center pointer-events-none">
+        <p class="text-[10px] font-mono tracking-widest muted uppercase opacity-60">Made by REAPER-357</p>
+    </div>
+
+    <!-- DISTRO MODAL -->
+    <div id="distroModal" class="modal fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="panel-bg w-full max-w-md rounded-3xl p-5 border bd shadow-2xl space-y-3 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-bold txt">Choose your distro</h3>
+                <button class="closeModalBtn muted text-lg" aria-label="Close"><i class="ic" data-i="x"></i></button>
+            </div>
+            <p class="text-xs muted">Package, service, firewall and log commands switch to match.</p>
+            <div id="distroList" class="space-y-2"></div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settingsModal" class="modal fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="panel-bg w-full max-w-sm rounded-3xl p-6 border bd shadow-2xl space-y-4 text-center relative max-h-[92vh] overflow-y-auto">
+            <button class="closeModalBtn absolute top-4 right-4 muted text-lg" aria-label="Close"><i class="ic" data-i="x"></i></button>
+            <img src="icon.png" alt="MapleLeaf CLI Logo" class="w-24 h-24 mx-auto rounded-2xl object-cover border bd shadow-lg" onerror="this.onerror=null; this.outerHTML='<div class=\'w-20 h-20 mx-auto rounded-2xl inset border bd flex items-center justify-center accent-text text-3xl shadow-lg\'><i class=\'ic\' data-i=\'leaf\'></i></div>';" />
+            <h3 class="text-base font-bold txt">MapleLeaf CLI Settings</h3>
+
+            <div class="inset p-3 rounded-2xl border bd space-y-2 text-left">
+                <span class="text-xs font-semibold txt">Background theme</span>
+                <div class="grid grid-cols-3 gap-2 pt-1">
+                    <button data-act="theme" data-val="black" class="btn btn-ghost justify-center">Pure Black</button>
+                    <button data-act="theme" data-val="dark" class="btn btn-ghost justify-center">Dark</button>
+                    <button data-act="theme" data-val="light" class="btn btn-ghost justify-center">Light</button>
+                </div>
+            </div>
+
+            <div class="inset p-3 rounded-2xl border bd space-y-2 text-left">
+                <span class="text-xs font-semibold txt">Accent color</span>
+                <div class="flex items-center justify-around pt-2">
+                    <button aria-label="Green" data-act="accent" data-val="#10b981" class="w-7 h-7 rounded-full bg-emerald-500 hover:scale-110 transition-transform"></button>
+                    <button aria-label="Red" data-act="accent" data-val="#ef4444" class="w-7 h-7 rounded-full bg-red-500 hover:scale-110 transition-transform"></button>
+                    <button aria-label="Blue" data-act="accent" data-val="#3b82f6" class="w-7 h-7 rounded-full bg-blue-500 hover:scale-110 transition-transform"></button>
+                    <button aria-label="Purple" data-act="accent" data-val="#a855f7" class="w-7 h-7 rounded-full bg-purple-500 hover:scale-110 transition-transform"></button>
+                    <button aria-label="Amber" data-act="accent" data-val="#f59e0b" class="w-7 h-7 rounded-full bg-amber-500 hover:scale-110 transition-transform"></button>
+                </div>
+            </div>
+
+            <div class="inset p-3 rounded-2xl border bd space-y-2 text-left">
+                <span class="text-xs font-semibold txt">Privilege escalation</span>
+                <select id="privSelect" class="field">
+                    <option value="sudo">sudo (default)</option>
+                    <option value="doas">doas (Alpine / OpenBSD style)</option>
+                    <option value="none">none (running as root)</option>
+                </select>
+                <p class="text-[10px] muted">Rewrites the command prefix in everything you copy.</p>
+            </div>
+
+            <div class="inset p-3 rounded-2xl border bd space-y-2 text-left">
+                <span class="text-xs font-semibold txt">Backup</span>
+                <div class="grid grid-cols-2 gap-2">
+                    <button data-act="export" class="btn btn-ghost justify-center"><i class="ic" data-i="download"></i> Export</button>
+                    <button data-act="import" class="btn btn-ghost justify-center"><i class="ic" data-i="upload"></i> Import</button>
+                </div>
+                <input type="file" id="importFile" accept="application/json,.json" class="hidden">
+            </div>
+
+            <p class="text-[10px] font-mono muted uppercase tracking-widest">Designed by REAPER-357</p>
+        </div>
+    </div>
+
+    <!-- SNIPPET MODAL -->
+    <div id="cmdModal" class="modal fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="panel-bg w-full max-w-sm rounded-3xl p-6 border bd shadow-2xl space-y-4 text-left max-h-[92vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b bd pb-3">
+                <h3 id="cmdModalTitle" class="text-base font-bold txt">Add Snippet</h3>
+                <button class="closeModalBtn muted text-lg" aria-label="Close"><i class="ic" data-i="x"></i></button>
+            </div>
+            <input type="hidden" id="editingCmdId" value="">
+            <div class="space-y-3">
+                <div><label class="block text-xs font-semibold mb-1 txt">Label</label>
+                    <input type="text" id="cmdLabelInput" placeholder="e.g. Quick System Update" class="field"></div>
+                <div><label class="block text-xs font-semibold mb-1 txt">Command <span class="muted font-normal">(supports {{variables}})</span></label>
+                    <textarea id="cmdStringInput" rows="4" spellcheck="false" placeholder="e.g. rsync -avh {{src}} {{dest:/mnt/backup/}}" class="field font-mono accent-text"></textarea></div>
+                <div><label class="block text-xs font-semibold mb-1 txt">Category</label>
+                    <input type="text" id="cmdCategoryInput" placeholder="e.g. Maintenance" class="field"></div>
+                <div><label class="block text-xs font-semibold mb-1 txt">Distro</label>
+                    <select id="cmdDistroInput" class="field"></select></div>
+                <label class="flex items-center gap-2 text-xs txt"><input type="checkbox" id="cmdFavInput"> Star as favorite</label>
+            </div>
+            <div class="flex justify-end gap-2 pt-1">
+                <button class="closeModalBtn btn btn-ghost">Cancel</button>
+                <button id="btnSaveCmd" class="btn accent-bg shadow-md">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VARIABLES MODAL -->
+    <div id="varModal" class="modal fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="panel-bg w-full max-w-sm rounded-3xl p-6 border bd shadow-2xl space-y-4 text-left max-h-[92vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b bd pb-3">
+                <h3 class="text-base font-bold txt">Fill in values</h3>
+                <button class="closeModalBtn muted text-lg" aria-label="Close"><i class="ic" data-i="x"></i></button>
+            </div>
+            <div id="varFields" class="space-y-3"></div>
+            <pre id="varPreview" class="out inset border bd rounded-xl p-2.5 font-mono text-[11px] accent-text"></pre>
+            <div class="flex justify-end gap-2">
+                <button class="closeModalBtn btn btn-ghost">Cancel</button>
+                <button id="btnVarApply" class="btn accent-bg shadow-md"><i class="ic" data-i="check"></i> Use</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    /* ==================================================================
+       DISTRO REGISTRY
+       ================================================================== */
+    const DISTROS = {
+        debian: { name: 'Debian / Ubuntu / Mint', short: 'Debian family', eg: 'Debian, Ubuntu, Linux Mint, Pop!_OS, Kali', color: '#e11d48', pm: 'apt',    init: 'systemd', fw: 'ufw',       admin: 'sudo'  },
+        fedora: { name: 'Fedora / RHEL',          short: 'Fedora family', eg: 'Fedora, RHEL, Rocky, AlmaLinux, CentOS Stream', color: '#3b82f6', pm: 'dnf',    init: 'systemd', fw: 'firewalld', admin: 'wheel' },
+        arch:   { name: 'Arch / Manjaro',         short: 'Arch family',   eg: 'Arch, Manjaro, EndeavourOS, CachyOS', color: '#06b6d4', pm: 'pacman', init: 'systemd', fw: 'nftables',  admin: 'wheel' },
+        suse:   { name: 'openSUSE / SLE',         short: 'openSUSE',      eg: 'Tumbleweed, Leap, SLES', color: '#22c55e', pm: 'zypper', init: 'systemd', fw: 'firewalld', admin: 'wheel' },
+        alpine: { name: 'Alpine Linux',           short: 'Alpine',        eg: 'Alpine, postmarketOS', color: '#38bdf8', pm: 'apk',    init: 'openrc',  fw: 'nftables',  admin: 'wheel' },
+        void:   { name: 'Void Linux',             short: 'Void',          eg: 'Void (glibc / musl)', color: '#84cc16', pm: 'xbps',   init: 'runit',   fw: 'nftables',  admin: 'wheel' },
+        gentoo: { name: 'Gentoo',                 short: 'Gentoo',        eg: 'Gentoo, Funtoo, Calculate', color: '#a855f7', pm: 'emerge', init: 'openrc',  fw: 'nftables',  admin: 'wheel' },
+        nixos:  { name: 'NixOS',                  short: 'NixOS',         eg: 'NixOS', color: '#60a5fa', pm: 'nix',    init: 'systemd', fw: 'nftables',  admin: 'wheel' }
+    };
+
+    const PM_OPS = [
+        ['check', 'Check for updates'], ['upgrade', 'Upgrade packages'], ['full', 'Full system upgrade'],
+        ['install', 'Install package'], ['remove', 'Remove package'], ['purge', 'Remove package + config / deps'],
+        ['autoremove', 'Remove unused dependencies'], ['search', 'Search repositories'], ['info', 'Show package info'],
+        ['list', 'List installed packages'], ['clean', 'Clean package cache'], ['owns', 'Which package owns a file'],
+        ['files', 'List files in a package'], ['rdeps', 'Reverse dependencies'], ['hold', 'Hold / lock version']
+    ];
+
+    const PM = {
+        debian: { check: 'sudo apt update && apt list --upgradable', upgrade: 'sudo apt upgrade -y', full: 'sudo apt update && sudo apt full-upgrade -y',
+            install: 'sudo apt install -y {pkg}', remove: 'sudo apt remove {pkg}', purge: 'sudo apt purge {pkg}', autoremove: 'sudo apt autoremove -y',
+            search: 'apt search {pkg}', info: 'apt show {pkg}', list: 'apt list --installed', clean: 'sudo apt clean && sudo apt autoclean',
+            owns: 'dpkg -S {pkg}', files: 'dpkg -L {pkg}', rdeps: 'apt rdepends --installed {pkg}', hold: 'sudo apt-mark hold {pkg}' },
+        fedora: { check: 'dnf check-update', upgrade: 'sudo dnf upgrade -y', full: 'sudo dnf upgrade --refresh -y',
+            install: 'sudo dnf install -y {pkg}', remove: 'sudo dnf remove {pkg}', purge: 'sudo dnf remove {pkg} && sudo dnf autoremove -y', autoremove: 'sudo dnf autoremove -y',
+            search: 'dnf search {pkg}', info: 'dnf info {pkg}', list: 'dnf list --installed', clean: 'sudo dnf clean all',
+            owns: 'rpm -qf {pkg}', files: 'rpm -ql {pkg}', rdeps: 'dnf repoquery --installed --whatrequires {pkg}', hold: 'sudo dnf versionlock add {pkg}' },
+        arch: { check: 'checkupdates', upgrade: 'sudo pacman -Syu', full: 'sudo pacman -Syu',
+            install: 'sudo pacman -S --needed {pkg}', remove: 'sudo pacman -R {pkg}', purge: 'sudo pacman -Rns {pkg}', autoremove: 'sudo pacman -Rns $(pacman -Qdtq)',
+            search: 'pacman -Ss {pkg}', info: 'pacman -Si {pkg}', list: 'pacman -Qe', clean: 'sudo pacman -Sc',
+            owns: 'pacman -Qo {pkg}', files: 'pacman -Ql {pkg}', rdeps: 'pactree -r {pkg}', hold: '# add "IgnorePkg = {pkg}" under [options] in /etc/pacman.conf' },
+        suse: { check: 'zypper list-updates', upgrade: 'sudo zypper update -y', full: 'sudo zypper refresh && sudo zypper dup',
+            install: 'sudo zypper install -y {pkg}', remove: 'sudo zypper remove {pkg}', purge: 'sudo zypper remove --clean-deps {pkg}', autoremove: 'zypper packages --unneeded',
+            search: 'zypper search {pkg}', info: 'zypper info {pkg}', list: 'zypper search --installed-only', clean: 'sudo zypper clean --all',
+            owns: 'rpm -qf {pkg}', files: 'rpm -ql {pkg}', rdeps: 'rpm -q --whatrequires {pkg}', hold: 'sudo zypper addlock {pkg}' },
+        alpine: { check: 'sudo apk update && apk list -u', upgrade: 'sudo apk upgrade', full: 'sudo apk update && sudo apk upgrade',
+            install: 'sudo apk add {pkg}', remove: 'sudo apk del {pkg}', purge: 'sudo apk del --purge {pkg}', autoremove: null,
+            search: 'apk search {pkg}', info: 'apk info {pkg}', list: 'apk info', clean: 'sudo apk cache clean',
+            owns: 'apk info --who-owns {pkg}', files: 'apk info -L {pkg}', rdeps: 'apk info -r {pkg}', hold: null },
+        void: { check: 'xbps-install -Sun', upgrade: 'sudo xbps-install -Su', full: 'sudo xbps-install -Su',
+            install: 'sudo xbps-install -S {pkg}', remove: 'sudo xbps-remove {pkg}', purge: 'sudo xbps-remove -R {pkg}', autoremove: 'sudo xbps-remove -o',
+            search: 'xbps-query -Rs {pkg}', info: 'xbps-query -R {pkg}', list: 'xbps-query -l', clean: 'sudo xbps-remove -O',
+            owns: 'xlocate {pkg}', files: 'xbps-query -f {pkg}', rdeps: 'xbps-query -RX {pkg}', hold: 'sudo xbps-pkgdb -m hold {pkg}' },
+        gentoo: { check: 'sudo emaint sync -a && emerge -pvuDN @world', upgrade: 'sudo emerge -avuDN @world', full: 'sudo emaint sync -a && sudo emerge -avuDN @world',
+            install: 'sudo emerge -av {pkg}', remove: 'sudo emerge -aC {pkg}', purge: 'sudo emerge -aC {pkg}', autoremove: 'sudo emerge -a --depclean',
+            search: 'emerge -s {pkg}', info: 'equery meta {pkg}', list: 'qlist -I', clean: 'sudo eclean-distfiles',
+            owns: 'equery belongs {pkg}', files: 'equery files {pkg}', rdeps: 'equery depends {pkg}', hold: null },
+        nixos: { check: 'sudo nix-channel --update', upgrade: 'sudo nixos-rebuild switch --upgrade', full: 'sudo nixos-rebuild switch --upgrade',
+            install: 'nix-env -iA nixos.{pkg}', remove: 'nix-env -e {pkg}', purge: 'nix-env -e {pkg} && sudo nix-collect-garbage -d', autoremove: 'sudo nix-collect-garbage -d',
+            search: 'nix search nixpkgs {pkg}', info: 'nix-env -qa --description "{pkg}"', list: 'nix-env -q', clean: 'sudo nix-collect-garbage -d',
+            owns: null, files: null, rdeps: 'nix-store -q --referrers $(which {pkg})', hold: null }
+    };
+
+    const SV_OPS = [['start', 'Start'], ['stop', 'Stop'], ['restart', 'Restart'], ['enable', 'Enable at boot (+ start)'], ['disable', 'Disable at boot (+ stop)'],
+        ['status', 'Status'], ['list', 'List all services'], ['failed', 'List failed / crashed'], ['logs', 'Follow logs']];
+    const SV = {
+        systemd: { start: 'sudo systemctl start {svc}', stop: 'sudo systemctl stop {svc}', restart: 'sudo systemctl restart {svc}',
+            enable: 'sudo systemctl enable --now {svc}', disable: 'sudo systemctl disable --now {svc}', status: 'systemctl status {svc}',
+            list: 'systemctl list-units --type=service', failed: 'systemctl --failed', logs: 'journalctl -u {svc} -f' },
+        openrc: { start: 'sudo rc-service {svc} start', stop: 'sudo rc-service {svc} stop', restart: 'sudo rc-service {svc} restart',
+            enable: 'sudo rc-update add {svc} default && sudo rc-service {svc} start', disable: 'sudo rc-service {svc} stop && sudo rc-update del {svc} default',
+            status: 'rc-service {svc} status', list: 'rc-status --all', failed: 'rc-status --crashed', logs: 'sudo tail -f /var/log/messages' },
+        runit: { start: 'sudo sv up {svc}', stop: 'sudo sv down {svc}', restart: 'sudo sv restart {svc}',
+            enable: 'sudo ln -s /etc/sv/{svc} /var/service/', disable: 'sudo rm /var/service/{svc}', status: 'sudo sv status {svc}',
+            list: 'sudo sv status /var/service/*', failed: 'sudo sv status /var/service/* | grep -v "^run"', logs: 'sudo tail -f /var/log/socklog/everything/current' }
+    };
+
+    /* ==================================================================
+       HELPERS
+       ================================================================== */
+    const $ = s => document.querySelector(s);
+    const $$ = s => [...document.querySelectorAll(s)];
+    const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const safeParse = (str, fb) => { try { return str ? JSON.parse(str) : fb; } catch (e) { return fb; } };
+    const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+    const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+    const j = (...a) => a.filter(x => x !== '' && x != null && x !== false).join(' ');
+    const q = s => /^[\w@%+=:,.\/~*?-]+$/.test(s) ? s : '"' + String(s).replace(/(["\\`])/g, '\\$1') + '"';
+    const qa = s => '"' + String(s).replace(/(["\\`])/g, '\\$1') + '"';
+    const FL = on => Object.values(on).join(' ');
+    const opts = pairs => pairs.map(p => Array.isArray(p) ? { value: p[0], label: p[1] } : { value: p, label: p });
+    const INIT = () => DISTROS[distro].init;
+    const VAR_RE = /\{\{(\w+)(?::([^}]*))?\}\}/g;
+    const DANGER = /\brm\s+(-\w*\s+)*-\w*[rf]|\bdd\b[^|]*\bof=|\bmkfs|\bwipefs|\bshred\b|\bfdisk\b|\bparted\b|chmod\s+(-\w+\s+)*0?777|:\(\)\s*\{|>\s*\/dev\/sd|--remove\b|--delete\b|reset --hard|\s-delete\b|userdel|system prune|collect-garbage|\/etc\/fstab|sed\s+-i|-P INPUT DROP/;
+
+    /* ==================================================================
+       STATE
+       ================================================================== */
+    const DEFAULT_SNIPPETS = [
+        { id: 'fav_rsync_backup', label: 'Rsync Backup Folder', command: 'rsync -avzhP {{src:/source/}} {{dest:/destination/}}', category: 'File Operations', favorite: true, distro: '' },
+        { id: 'fav_clamscan_quick', label: 'ClamAV Scan Home Directory', command: 'clamscan -r -i /home/$USER', category: 'Security', favorite: true, distro: '' },
+        { id: 'fav_big_dirs', label: 'Biggest folders here', command: 'du -h --max-depth=1 . | sort -rh | head -20', category: 'Disk', favorite: true, distro: '' },
+        { id: 'fav_snapshot', label: 'System snapshot', command: 'uname -a && uptime && free -h && df -h /', category: 'System', favorite: true, distro: '' }
+    ];
+
+    let distro = lsGet('mapleleaf_distro'); if (!DISTROS[distro]) distro = 'debian';
+    let priv = lsGet('mapleleaf_priv') || 'sudo';
+    let snippets = safeParse(lsGet('mapleleaf_custom_cmds'), DEFAULT_SNIPPETS);
+    let script = safeParse(lsGet('mapleleaf_script'), []);
+    let history = safeParse(lsGet('mapleleaf_history'), []);
+    let activeUtil = null, genState = {}, libCat = 'All', snipOnly = false, bufferTouched = false, currentBuffer = '';
+    let pending = null;
+
+    const saveSnippets = () => lsSet('mapleleaf_custom_cmds', JSON.stringify(snippets));
+    const saveScript = () => lsSet('mapleleaf_script', JSON.stringify(script));
+    const saveHistory = () => lsSet('mapleleaf_history', JSON.stringify(history));
+
+    /* ---------- privilege rewriting ---------- */
+    function P(cmd) {
+        if (priv === 'sudo') return cmd;
+        const rep = priv === 'doas' ? 'doas ' : '';
+        return String(cmd).replace(/(^|[;&|(]\s*|\n)(\s*)sudo\s+/g, (m, a, b) => a + b + rep);
+    }
+    const pmCmd = (op, pkg) => { const t = PM[distro][op]; return t ? t.replace(/\{pkg\}/g, pkg || '<package>') : null; };
+
+    /* ==================================================================
+       LOCAL ICON SYSTEM  (assets/icons/<lucide-name>.svg)
+       ================================================================== */
+    const iconProbe = {};
+    function probe(n) {
+        if (!iconProbe[n]) iconProbe[n] = new Promise(res => { const im = new Image(); im.onload = () => res(true); im.onerror = () => res(false); im.src = 'assets/icons/' + n + '.svg'; });
+        return iconProbe[n];
+    }
+    function hydrateIcons() {
+        document.querySelectorAll('[data-i]:not([data-h])').forEach(el => {
+            el.dataset.h = '1';
+            const n = el.dataset.i;
+            probe(n).then(ok => { if (ok) { el.style.setProperty('--src', 'url("assets/icons/' + n + '.svg")'); el.classList.add('on'); } });
+        });
+    }
+    const ic = (n, c = '') => `<i class="ic ${c}" data-i="${n}"></i>`;
+    let hydrateQueued = false;
+    new MutationObserver(() => { if (hydrateQueued) return; hydrateQueued = true; requestAnimationFrame(() => { hydrateQueued = false; hydrateIcons(); }); })
+        .observe(document.documentElement, { childList: true, subtree: true });
+
+    /* ==================================================================
+       GENERATORS
+       ================================================================== */
+    const GEN_CATS = ['Packages', 'System', 'Files', 'Network', 'Dev', 'Security', 'Media'];
+    const unavailable = what => `# ${what} is not available on ${DISTROS[distro].name}`;
+
+    const GENERATORS = [
+        { id: 'pkg', name: 'Package Manager', cat: 'Packages', desc: 'Same actions, correct syntax for your distro',
+            inputs: [{ id: 'op', label: 'Action', type: 'select', options: opts(PM_OPS) }, { id: 'pkg', label: 'Package / file / search term', type: 'text', placeholder: 'htop' }],
+            build: v => pmCmd(v.op || 'check', v.pkg) || unavailable('That action') },
+
+        { id: 'flatpak', name: 'Flatpak / Snap', cat: 'Packages', desc: 'Universal app formats',
+            inputs: [{ id: 'tool', label: 'Tool', type: 'select', options: opts(['flatpak', 'snap']) },
+                { id: 'op', label: 'Action', type: 'select', options: opts([['install', 'Install'], ['remove', 'Remove'], ['update', 'Update all'], ['list', 'List installed'], ['run', 'Run'], ['search', 'Search'], ['clean', 'Clean unused']]) },
+                { id: 'a', label: 'App ID / name', type: 'text', placeholder: 'org.mozilla.firefox' }],
+            build: v => {
+                const a = v.a || '<app>';
+                const t = (v.tool || 'flatpak') === 'flatpak'
+                    ? { install: `flatpak install -y flathub ${a}`, remove: `flatpak uninstall -y ${a}`, update: 'flatpak update -y', list: 'flatpak list --app', run: `flatpak run ${a}`, search: `flatpak search ${a}`, clean: 'flatpak uninstall --unused -y' }
+                    : { install: `sudo snap install ${a}`, remove: `sudo snap remove ${a}`, update: 'sudo snap refresh', list: 'snap list', run: `snap run ${a}`, search: `snap find ${a}`, clean: null };
+                return t[v.op || 'install'] || '# not applicable for this tool';
+            } },
+
+        { id: 'svc', name: 'Services (init-aware)', cat: 'System', desc: 'systemd, OpenRC or runit based on your distro',
+            inputs: [{ id: 'op', label: 'Action', type: 'select', options: opts(SV_OPS) }, { id: 'svc', label: 'Service name', type: 'text', placeholder: 'sshd' }],
+            build: v => (SV[INIT()][v.op || 'start'] || '').replace(/\{svc\}/g, v.svc || '<service>') },
+
+        { id: 'logs', name: 'Logs', cat: 'System', desc: 'journalctl on systemd, plain log files elsewhere',
+            inputs: [{ id: 'src', label: 'Source', type: 'select', options: opts([['service', 'A service'], ['boot', 'Current boot'], ['kernel', 'Kernel messages'], ['errors', 'Errors only']]) },
+                { id: 'unit', label: 'Service name (for "A service")', type: 'text', placeholder: 'sshd' },
+                { id: 'lines', label: 'Lines', type: 'text', placeholder: '100' },
+                { id: 'since', label: 'Since (systemd only)', type: 'text', placeholder: '1 hour ago' }],
+            flags: [{ id: 'f', label: 'Follow (-f)', flag: '-f' }, { id: 'np', label: 'No pager', flag: '--no-pager' }, { id: 'r', label: 'Newest first (-r)', flag: '-r' }],
+            build: (v, on) => {
+                const n = v.lines || '100', src = v.src || 'service', u = v.unit || '<service>';
+                if (INIT() === 'systemd') {
+                    const p = ['journalctl'];
+                    if (src === 'service') p.push('-u', u); if (src === 'boot') p.push('-b'); if (src === 'kernel') p.push('-k'); if (src === 'errors') p.push('-p err -b');
+                    p.push('-n', n); if (v.since) p.push('--since', q(v.since)); p.push(FL(on));
+                    return j(...p);
+                }
+                const file = '/var/log/messages';
+                if (src === 'kernel') return `sudo dmesg | tail -n ${n}`;
+                if (src === 'errors') return `sudo grep -iE "error|fail" ${file} | tail -n ${n}`;
+                if (src === 'service') return `sudo grep ${u} ${file} | tail -n ${n}`;
+                return j('sudo tail -n', n, on.f ? '-f' : '', file);
+            } },
+
+        { id: 'users', name: 'Users & Groups', cat: 'System', desc: 'Admin group name adapts (sudo / wheel)',
+            inputs: [{ id: 'op', label: 'Action', type: 'select', options: opts([['add', 'Create user'], ['passwd', 'Set password'], ['addgrp', 'Add to group'], ['groups', 'Show user groups'], ['lock', 'Lock account'], ['unlock', 'Unlock account'], ['shell', 'Change shell'], ['last', 'Login history'], ['list', 'List normal users'], ['del', 'Delete user + home']]) },
+                { id: 'u', label: 'Username', type: 'text', placeholder: 'alice' }, { id: 'g', label: 'Group (blank = admin group)', type: 'text', placeholder: DISTROS[distro].admin }],
+            build: v => {
+                const u = v.u || '<user>', g = v.g || DISTROS[distro].admin;
+                const t = { add: distro === 'alpine' ? `sudo adduser ${u}` : `sudo useradd -m -s /bin/bash ${u}`, passwd: `sudo passwd ${u}`, addgrp: `sudo usermod -aG ${g} ${u}`,
+                    groups: `id ${u}`, lock: `sudo usermod -L ${u}`, unlock: `sudo usermod -U ${u}`, shell: `sudo chsh -s /bin/zsh ${u}`, last: `last ${u}`,
+                    list: `getent passwd | awk -F: '$3>=1000 && $3<60000 {print $1}'`, del: `sudo userdel -r ${u}` };
+                return t[v.op || 'add'];
+            } },
+
+        { id: 'cron', name: 'Cron schedule', cat: 'System', desc: 'Build a crontab line and install it safely',
+            inputs: [{ id: 'preset', label: 'Schedule', type: 'select', options: opts([['* * * * *', 'Every minute'], ['*/5 * * * *', 'Every 5 minutes'], ['0 * * * *', 'Hourly'], ['0 3 * * *', 'Daily at 03:00'], ['0 0 * * 0', 'Weekly (Sunday)'], ['0 0 1 * *', 'Monthly'], ['@reboot', 'At reboot'], ['custom', 'Custom fields below']]) },
+                { id: 'm', label: 'Minute', type: 'text', placeholder: '*' }, { id: 'h', label: 'Hour', type: 'text', placeholder: '*' },
+                { id: 'dom', label: 'Day of month', type: 'text', placeholder: '*' }, { id: 'mon', label: 'Month', type: 'text', placeholder: '*' }, { id: 'dow', label: 'Day of week', type: 'text', placeholder: '*' },
+                { id: 'cmd', label: 'Command', type: 'text', placeholder: '/home/user/backup.sh' }],
+            flags: [{ id: 'inst', label: 'Output an install one-liner', flag: 'inst', on: true }],
+            build: (v, on) => {
+                const when = v.preset === 'custom' ? [v.m || '*', v.h || '*', v.dom || '*', v.mon || '*', v.dow || '*'].join(' ') : (v.preset || '* * * * *');
+                const line = `${when} ${v.cmd || '/path/to/script.sh'}`;
+                return on.inst ? `(crontab -l 2>/dev/null; echo '${line.replace(/'/g, "'\\''")}') | crontab -` : line;
+            } },
+
+        { id: 'unit', name: 'systemd unit file', cat: 'System', desc: 'Generate and enable a service unit',
+            inputs: [{ id: 'name', label: 'Unit name', type: 'text', placeholder: 'myapp' }, { id: 'desc', label: 'Description', type: 'text', placeholder: 'My app' },
+                { id: 'exec', label: 'ExecStart', type: 'text', placeholder: '/usr/local/bin/myapp --serve' }, { id: 'user', label: 'Run as user', type: 'text', placeholder: 'www-data' },
+                { id: 'wd', label: 'Working directory', type: 'text', placeholder: '/opt/myapp' },
+                { id: 'restart', label: 'Restart policy', type: 'select', options: opts(['on-failure', 'always', 'no']) }],
+            build: v => {
+                if (INIT() !== 'systemd') return `# ${DISTROS[distro].name} uses ${INIT()}, not systemd. Use the Services generator instead.`;
+                const n = v.name || 'myapp';
+                const body = `[Unit]\nDescription=${v.desc || n}\nAfter=network.target\n\n[Service]\nType=simple\n${v.user ? `User=${v.user}\n` : ''}${v.wd ? `WorkingDirectory=${v.wd}\n` : ''}ExecStart=${v.exec || '/usr/bin/true'}\nRestart=${v.restart || 'on-failure'}\n\n[Install]\nWantedBy=multi-user.target`;
+                return `sudo tee /etc/systemd/system/${n}.service > /dev/null <<'EOF'\n${body}\nEOF\nsudo systemctl daemon-reload && sudo systemctl enable --now ${n}`;
+            } },
+
+        { id: 'proc', name: 'Processes', cat: 'System', desc: 'Find, inspect and stop things',
+            inputs: [{ id: 'op', label: 'Action', type: 'select', options: opts([['cpu', 'Top CPU hogs'], ['mem', 'Top memory hogs'], ['find', 'Find process by name'], ['term', 'Stop PID politely'], ['kill9', 'Force-kill PID'], ['killname', 'Kill by name'], ['port', 'Who owns a port'], ['files', 'Open files of PID'], ['tree', 'Process tree'], ['zombies', 'Zombie processes'], ['renice', 'Lower priority of PID']]) },
+                { id: 'a', label: 'Name / PID / port', type: 'text', placeholder: 'firefox' }],
+            build: v => { const a = v.a || '<arg>';
+                return { cpu: 'ps aux --sort=-%cpu | head -15', mem: 'ps aux --sort=-%mem | head -15', find: `pgrep -af ${a}`, term: `kill ${a}`, kill9: `kill -9 ${a}`, killname: `pkill -f ${a}`,
+                    port: `sudo lsof -i :${a}`, files: `lsof -p ${a}`, tree: 'pstree -p', zombies: `ps aux | awk '$8 ~ /Z/'`, renice: `sudo renice -n 10 -p ${a}` }[v.op || 'cpu']; } },
+
+        { id: 'disk', name: 'Disk & Storage', cat: 'System', desc: 'Usage, devices, health',
+            inputs: [{ id: 'op', label: 'Action', type: 'select', options: opts([['df', 'Free space'], ['du', 'Biggest folders'], ['ncdu', 'Interactive usage (ncdu)'], ['lsblk', 'Block devices'], ['blkid', 'UUIDs & labels'], ['inodes', 'Inode usage'], ['smart', 'SMART full report'], ['health', 'SMART health verdict'], ['trim', 'TRIM all SSDs'], ['iostat', 'Live I/O stats'], ['mounts', 'Real mounts']]) },
+                { id: 'path', label: 'Path / device', type: 'text', placeholder: '. or /dev/sda' }],
+            build: v => { const p = v.path;
+                return { df: 'df -hT -x tmpfs -x devtmpfs', du: `du -h --max-depth=1 ${q(p || '.')} | sort -rh | head -20`, ncdu: `ncdu ${q(p || '.')}`, lsblk: 'lsblk -o NAME,SIZE,FSTYPE,MOUNTPOINT,LABEL,UUID',
+                    blkid: 'sudo blkid', inodes: 'df -i', smart: `sudo smartctl -a ${p || '/dev/sda'}`, health: `sudo smartctl -H ${p || '/dev/sda'}`, trim: 'sudo fstrim -av', iostat: 'iostat -xz 2', mounts: 'findmnt --real' }[v.op || 'df']; } },
+
+        { id: 'mount', name: 'Mount / Unmount', cat: 'System', desc: 'Drives, ISOs and fstab lines',
+            inputs: [{ id: 'op', label: 'Action', type: 'select', options: opts([['mount', 'Mount'], ['ro', 'Mount read-only'], ['umount', 'Unmount'], ['iso', 'Mount an ISO'], ['bind', 'Bind mount'], ['ntfs', 'Mount NTFS'], ['fstab', 'Add fstab line (by UUID)']]) },
+                { id: 'dev', label: 'Device / ISO / source', type: 'text', placeholder: '/dev/sdb1' }, { id: 'mp', label: 'Mount point', type: 'text', placeholder: '/mnt/usb' }],
+            build: v => { const d = v.dev || '/dev/sdb1', m = v.mp || '/mnt/usb';
+                return { mount: `sudo mount ${d} ${m}`, ro: `sudo mount -o ro ${d} ${m}`, umount: `sudo umount ${m}`, iso: `sudo mount -o loop,ro ${q(d)} ${m}`, bind: `sudo mount --bind ${q(d)} ${m}`, ntfs: `sudo mount -t ntfs3 ${d} ${m}`,
+                    fstab: `echo "UUID=$(sudo blkid -s UUID -o value ${d}) ${m} auto defaults,nofail 0 2" | sudo tee -a /etc/fstab` }[v.op || 'mount']; } },
+
+        { id: 'rsync', name: 'rsync', cat: 'Files', desc: 'Fast, resumable local and remote copy',
+            inputs: [{ id: 'src', label: 'Source', type: 'text', placeholder: '/home/user/Documents/' }, { id: 'dest', label: 'Destination (or user@host:/path)', type: 'text', placeholder: '/media/user/Backup/' },
+                { id: 'excl', label: 'Exclude (comma separated)', type: 'text', placeholder: 'node_modules, .git' }],
+            flags: [{ id: 'a', label: 'Archive (-a)', flag: '-a', on: true }, { id: 'v', label: 'Verbose (-v)', flag: '-v' }, { id: 'z', label: 'Compress (-z)', flag: '-z' }, { id: 'h', label: 'Human readable (-h)', flag: '-h', on: true },
+                { id: 'p', label: 'Progress', flag: '--progress', on: true }, { id: 'part', label: 'Keep partial files', flag: '--partial' }, { id: 'c', label: 'Checksum compare (-c)', flag: '-c' },
+                { id: 'del', label: 'Delete extras (--delete)', flag: '--delete' }, { id: 'dry', label: 'Dry run', flag: '--dry-run' }],
+            build: (v, on) => j('rsync', FL(on), ...(v.excl || '').split(',').map(x => x.trim()).filter(Boolean).map(x => `--exclude=${q(x)}`), q(v.src || '/source/'), q(v.dest || '/destination/')) },
+
+        { id: 'rclone', name: 'rclone', cat: 'Files', desc: 'Sync to and from cloud remotes',
+            inputs: [{ id: 'action', label: 'Action', type: 'select', options: opts([['copy', 'copy'], ['sync', 'sync (make target match source)'], ['move', 'move'], ['check', 'check'], ['ls', 'ls (list remote)'], ['mount', 'mount']]) },
+                { id: 'src', label: 'Source (path or remote:bucket)', type: 'text', placeholder: 'remote:bucket' }, { id: 'dest', label: 'Destination', type: 'text', placeholder: '/local/folder' }],
+            flags: [{ id: 'pr', label: 'Progress', flag: '--progress', on: true }, { id: 'dry', label: 'Dry run', flag: '--dry-run' }, { id: 'ck', label: 'Checksum', flag: '--checksum' }, { id: 'tr', label: '8 transfers', flag: '--transfers 8' }, { id: 'v', label: 'Verbose (-v)', flag: '-v' }],
+            build: (v, on) => v.action === 'ls' ? j('rclone ls', q(v.src || 'remote:'), FL(on)) : j('rclone', v.action || 'copy', q(v.src || 'remote:source'), q(v.dest || '/destination'), FL(on)) },
+
+        { id: 'tar', name: 'tar / archives', cat: 'Files', desc: 'gz, xz, bz2 and zstd',
+            inputs: [{ id: 'act', label: 'Operation', type: 'select', options: opts([['c', 'Create'], ['x', 'Extract'], ['t', 'List contents']]) },
+                { id: 'comp', label: 'Compression', type: 'select', options: opts([['z', 'gzip (.tar.gz)'], ['J', 'xz (.tar.xz)'], ['j', 'bzip2 (.tar.bz2)'], ['zst', 'zstd (.tar.zst)'], ['', 'none (.tar)']]) },
+                { id: 'archive', label: 'Archive file', type: 'text', placeholder: 'backup.tar.gz' }, { id: 'target', label: 'Folder / file (create)', type: 'text', placeholder: '/path/to/folder' },
+                { id: 'into', label: 'Extract into (optional)', type: 'text', placeholder: '/tmp/out' }],
+            flags: [{ id: 'p', label: 'Preserve perms (-p)', flag: '-p' }, { id: 'vcs', label: 'Exclude .git', flag: '--exclude-vcs' }],
+            build: (v, on) => {
+                const a = v.act || 'c', c = v.comp == null ? 'z' : v.comp;
+                const head = c === 'zst' ? `tar --zstd -${a}vf` : `tar -${a}${c}vf`;
+                return j(head, q(v.archive || 'archive.tar.gz'), a === 'c' ? q(v.target || 'folder') : '', a === 'x' && v.into ? `-C ${q(v.into)}` : '', FL(on));
+            } },
+
+        { id: 'find', name: 'find', cat: 'Files', desc: 'Search the filesystem by name, size, age',
+            inputs: [{ id: 'path', label: 'Start path', type: 'text', placeholder: '.' }, { id: 'name', label: 'Name pattern', type: 'text', placeholder: '*.log' },
+                { id: 'type', label: 'Type', type: 'select', options: opts([['', 'any'], ['f', 'files'], ['d', 'directories'], ['l', 'symlinks']]) },
+                { id: 'size', label: 'Size', type: 'text', placeholder: '+100M' }, { id: 'mtime', label: 'Modified (days)', type: 'text', placeholder: '-7' },
+                { id: 'act', label: 'Then', type: 'select', options: opts([['', 'print'], ['ls', 'long listing'], ['sha', 'sha256 each'], ['count', 'count results'], ['delete', 'DELETE matches']]) }],
+            flags: [{ id: 'ic', label: 'Case-insensitive name', flag: 'ic' }, { id: 'xd', label: 'Stay on one filesystem', flag: '-xdev' }, { id: 'em', label: 'Empty only', flag: '-empty' }],
+            build: (v, on) => {
+                const a = v.act;
+                return j('find', q(v.path || '.'), on.xd, v.type ? `-type ${v.type}` : '', v.name ? `${on.ic ? '-iname' : '-name'} ${qa(v.name)}` : '', v.size ? `-size ${v.size}` : '', v.mtime ? `-mtime ${v.mtime}` : '', on.em,
+                    a === 'ls' ? '-ls' : a === 'sha' ? '-exec sha256sum {} +' : a === 'delete' ? '-delete' : '') + (a === 'count' ? ' | wc -l' : '');
+            } },
+
+        { id: 'grep', name: 'grep / ripgrep', cat: 'Files', desc: 'Search inside files',
+            inputs: [{ id: 'tool', label: 'Tool', type: 'select', options: opts(['grep', 'rg']) }, { id: 'pat', label: 'Pattern', type: 'text', placeholder: 'TODO' },
+                { id: 'path', label: 'Path', type: 'text', placeholder: '.' }, { id: 'glob', label: 'Only files matching', type: 'text', placeholder: '*.py' }],
+            flags: [{ id: 'r', label: 'Recursive (-r)', flag: '-r', on: true }, { id: 'i', label: 'Ignore case (-i)', flag: '-i' }, { id: 'n', label: 'Line numbers (-n)', flag: '-n', on: true }, { id: 'l', label: 'Filenames only (-l)', flag: '-l' },
+                { id: 'v', label: 'Invert (-v)', flag: '-v' }, { id: 'E', label: 'Extended regex (-E)', flag: '-E' }, { id: 'w', label: 'Whole word (-w)', flag: '-w' }, { id: 'C', label: '2 lines context', flag: '-C 2' }],
+            build: (v, on) => {
+                const rg = v.tool === 'rg', f = { ...on };
+                if (rg) { delete f.r; delete f.E; }
+                return j(rg ? 'rg' : 'grep', FL(f), v.glob ? (rg ? `-g ${qa(v.glob)}` : `--include=${qa(v.glob)}`) : '', q(v.pat || 'pattern'), q(v.path || '.'));
+            } },
+
+        { id: 'perms', name: 'chmod / chown', cat: 'Files', desc: 'Permissions and ownership',
+            inputs: [{ id: 'op', label: 'Action', type: 'select', options: opts([['chmod', 'chmod'], ['chown', 'chown'], ['both', 'both']]) },
+                { id: 'mode', label: 'Mode', type: 'text', placeholder: '755 or u+x' }, { id: 'owner', label: 'Owner[:group]', type: 'text', placeholder: '$USER:$USER' }, { id: 'path', label: 'Path', type: 'text', placeholder: '/path' }],
+            flags: [{ id: 'R', label: 'Recursive (-R)', flag: '-R' }, { id: 'v', label: 'Verbose (-v)', flag: '-v' }],
+            build: (v, on) => {
+                const a = j('chmod', FL(on), v.mode || '755', q(v.path || 'file'));
+                const b = j('sudo chown', FL(on), v.owner || '$USER:$USER', q(v.path || 'file'));
+                return v.op === 'chown' ? b : v.op === 'both' ? `${a} && ${b}` : a;
+            } },
+
+        { id: 'dd', name: 'dd / disk images', cat: 'Files', desc: 'Write ISOs, back up disks. Destructive: verify the device!',
+            inputs: [{ id: 'op', label: 'Action', type: 'select', options: opts([['iso', 'Write ISO to USB'], ['backup', 'Disk to image file'], ['restore', 'Image file to disk']]) },
+                { id: 'file', label: 'ISO / image file', type: 'text', placeholder: 'distro.iso' }, { id: 'dev', label: 'Device (check with lsblk!)', type: 'text', placeholder: '/dev/sdX' }],
+            flags: [{ id: 'sp', label: 'Progress', flag: 'status=progress', on: true }, { id: 'fs', label: 'fsync at end', flag: 'conv=fsync', on: true }],
+            build: (v, on) => { const f = q(v.file || 'image.iso'), d = v.dev || '/dev/sdX', fl = FL(on);
+                return v.op === 'backup' ? j('sudo dd', `if=${d}`, `of=${f}`, 'bs=4M', fl) : j('sudo dd', `if=${f}`, `of=${d}`, 'bs=4M', fl); } },
+
+        { id: 'net', name: 'Networking', cat: 'Network', desc: 'Inspect, test and troubleshoot',
+            inputs: [{ id: 'op', label: 'Action', type: 'select', options: opts([['addr', 'IP addresses'], ['route', 'Routing table'], ['ports', 'Listening ports'], ['conns', 'Active connections'], ['ping', 'Ping'], ['mtr', 'Trace route (mtr)'], ['dig', 'DNS lookup'], ['pubip', 'Public IP'], ['nc', 'Test TCP port'], ['scan', 'Scan subnet (nmap)'], ['wifi', 'List Wi-Fi'], ['wificon', 'Connect Wi-Fi'], ['arp', 'Neighbours (ARP)'], ['dnsflush', 'Flush DNS cache'], ['whois', 'WHOIS']]) },
+                { id: 'host', label: 'Host / SSID / subnet', type: 'text', placeholder: 'example.com' }, { id: 'port', label: 'Port', type: 'text', placeholder: '22' }],
+            build: v => { const h = v.host || 'example.com';
+                return { addr: 'ip -br addr', route: 'ip route', ports: 'sudo ss -tulpn', conns: 'ss -tnp', ping: `ping -c 4 ${h}`, mtr: `mtr -rwc 10 ${h}`, dig: `dig +short ${h}`, pubip: 'curl -s ifconfig.me', nc: `nc -zv ${h} ${v.port || '22'}`,
+                    scan: `sudo nmap -sn ${v.host || '192.168.1.0/24'}`, wifi: 'nmcli dev wifi list', wificon: `nmcli dev wifi connect ${q(v.host || '<SSID>')} --ask`, arp: 'ip neigh',
+                    dnsflush: INIT() === 'systemd' ? 'resolvectl flush-caches' : '# restart your resolver (nscd, dnsmasq, unbound)', whois: `whois ${h}` }[v.op || 'addr']; } },
+
+        { id: 'firewall', name: 'Firewall', cat: 'Network', desc: 'ufw, firewalld, nftables, iptables (defaults to your distro)',
+            inputs: [{ id: 'be', label: 'Backend', type: 'select', options: opts(['ufw', 'firewalld', 'nftables', 'iptables']), def: () => DISTROS[distro].fw },
+                { id: 'op', label: 'Action', type: 'select', options: opts([['status', 'Status'], ['list', 'List rules'], ['allow', 'Allow port'], ['deny', 'Block port'], ['from', 'Allow port from IP'], ['enable', 'Enable'], ['reload', 'Reload']]) },
+                { id: 'port', label: 'Port', type: 'text', placeholder: '443' }, { id: 'proto', label: 'Protocol', type: 'select', options: opts(['tcp', 'udp']) }, { id: 'ip', label: 'Source IP / CIDR', type: 'text', placeholder: '192.168.1.0/24' }],
+            build: v => {
+                const p = v.port || '<port>', pr = v.proto || 'tcp', ip = v.ip || '<ip>';
+                const T = {
+                    ufw: { status: 'sudo ufw status verbose', list: 'sudo ufw status numbered', allow: `sudo ufw allow ${p}/${pr}`, deny: `sudo ufw deny ${p}/${pr}`, from: `sudo ufw allow from ${ip} to any port ${p} proto ${pr}`, enable: 'sudo ufw enable', reload: 'sudo ufw reload' },
+                    firewalld: { status: 'sudo firewall-cmd --state', list: 'sudo firewall-cmd --list-all', allow: `sudo firewall-cmd --permanent --add-port=${p}/${pr} && sudo firewall-cmd --reload`, deny: `sudo firewall-cmd --permanent --remove-port=${p}/${pr} && sudo firewall-cmd --reload`,
+                        from: `sudo firewall-cmd --permanent --add-rich-rule="rule family=ipv4 source address=${ip} port port=${p} protocol=${pr} accept" && sudo firewall-cmd --reload`, enable: 'sudo systemctl enable --now firewalld', reload: 'sudo firewall-cmd --reload' },
+                    nftables: { status: 'sudo nft list ruleset', list: 'sudo nft -a list ruleset', allow: `sudo nft add rule inet filter input ${pr} dport ${p} accept`, deny: `sudo nft add rule inet filter input ${pr} dport ${p} drop`,
+                        from: `sudo nft add rule inet filter input ip saddr ${ip} ${pr} dport ${p} accept`, enable: 'sudo systemctl enable --now nftables', reload: 'sudo nft -f /etc/nftables.conf' },
+                    iptables: { status: 'sudo iptables -L -n -v', list: 'sudo iptables -L --line-numbers -n', allow: `sudo iptables -A INPUT -p ${pr} --dport ${p} -j ACCEPT`, deny: `sudo iptables -A INPUT -p ${pr} --dport ${p} -j DROP`,
+                        from: `sudo iptables -A INPUT -s ${ip} -p ${pr} --dport ${p} -j ACCEPT`, enable: '# iptables has no on/off switch. Set policy with: sudo iptables -P INPUT DROP (allow SSH first!)', reload: 'sudo iptables-restore < /etc/iptables/rules.v4' }
+                };
+                return (T[v.be || DISTROS[distro].fw] || T.ufw)[v.op || 'status'];
+            } },
+
+        { id: 'ssh', name: 'SSH / SCP', cat: 'Network', desc: 'Connect, tunnel, copy files, install keys',
+            inputs: [{ id: 'tool', label: 'Mode', type: 'select', options: opts([['ssh', 'Connect (ssh)'], ['up', 'Upload (scp)'], ['down', 'Download (scp)'], ['copyid', 'Install my key (ssh-copy-id)']]) },
+                { id: 'user', label: 'User', type: 'text', placeholder: 'root' }, { id: 'host', label: 'Host', type: 'text', placeholder: 'server.example.com' }, { id: 'port', label: 'Port', type: 'text', placeholder: '22' },
+                { id: 'key', label: 'Identity file', type: 'text', placeholder: '~/.ssh/id_ed25519' }, { id: 'fwd', label: 'Local forward (ssh)', type: 'text', placeholder: '8080:localhost:80' },
+                { id: 'local', label: 'Local path (scp)', type: 'text', placeholder: './file.txt' }, { id: 'remote', label: 'Remote path (scp) / command (ssh)', type: 'text', placeholder: '/tmp/' }],
+            flags: [{ id: 'v', label: 'Verbose (-v)', flag: '-v' }, { id: 'C', label: 'Compression (-C)', flag: '-C' }],
+            build: (v, on) => {
+                const t = v.tool || 'ssh', uh = (v.user ? v.user + '@' : '') + (v.host || 'host');
+                if (t === 'copyid') return j('ssh-copy-id', v.key ? `-i ${q(v.key)}` : '', v.port ? `-p ${v.port}` : '', uh);
+                if (t === 'ssh') return j('ssh', FL(on), v.port ? `-p ${v.port}` : '', v.key ? `-i ${q(v.key)}` : '', v.fwd ? `-L ${v.fwd}` : '', uh, v.remote ? q(v.remote) : '');
+                const base = j('scp -r', FL(on), v.port ? `-P ${v.port}` : '', v.key ? `-i ${q(v.key)}` : '');
+                return t === 'up' ? j(base, q(v.local || './file'), `${uh}:${q(v.remote || '~/')}`) : j(base, `${uh}:${q(v.remote || '~/file')}`, q(v.local || '.'));
+            } },
+
+        { id: 'keygen', name: 'ssh-keygen', cat: 'Network', desc: 'Create SSH keys',
+            inputs: [{ id: 'type', label: 'Type', type: 'select', options: opts([['ed25519', 'ed25519 (recommended)'], ['rsa', 'RSA 4096'], ['ecdsa', 'ECDSA 521']]) },
+                { id: 'comment', label: 'Comment', type: 'text', placeholder: 'me@laptop' }, { id: 'file', label: 'File', type: 'text', placeholder: '~/.ssh/id_ed25519' }],
+            build: v => { const t = v.type || 'ed25519'; return j('ssh-keygen -t', t, t === 'rsa' ? '-b 4096' : '', t === 'ecdsa' ? '-b 521' : '', v.comment ? `-C ${q(v.comment)}` : '', v.file ? `-f ${q(v.file)}` : ''); } },
+
+        { id: 'curl', name: 'curl / wget', cat: 'Network', desc: 'Download and test HTTP',
+            inputs: [{ id: 'tool', label: 'Tool', type: 'select', options: opts(['curl', 'wget']) }, { id: 'url', label: 'URL', type: 'text', placeholder: 'https://example.com/file.zip' },
+                { id: 'method', label: 'Method (curl)', type: 'select', options: opts(['GET', 'POST', 'PUT', 'DELETE']) }, { id: 'hdr', label: 'Header (curl)', type: 'text', placeholder: 'Authorization: Bearer TOKEN' },
+                { id: 'data', label: 'Body (curl)', type: 'text', placeholder: '{"key":"value"}' }, { id: 'out', label: 'Save as', type: 'text', placeholder: 'file.zip' }],
+            flags: [{ id: 'follow', label: 'Follow redirects', flag: 'follow', on: true }, { id: 'cont', label: 'Resume download', flag: 'cont' }, { id: 'head', label: 'Headers only', flag: 'head' }, { id: 'silent', label: 'Quiet', flag: 'silent' }, { id: 'insec', label: 'Skip TLS verify', flag: 'insec' }],
+            build: (v, on) => {
+                const url = q(v.url || 'https://example.com');
+                if (v.tool === 'wget') return j('wget', on.cont ? '-c' : '', on.head ? '--spider -S' : '', on.silent ? '-q' : '', on.insec ? '--no-check-certificate' : '', v.out ? `-O ${q(v.out)}` : '', url);
+                return j('curl', on.follow ? '-L' : '', on.cont ? '-C -' : '', on.head ? '-I' : '', on.silent ? '-sS' : '', on.insec ? '-k' : '', v.method && v.method !== 'GET' ? `-X ${v.method}` : '', v.hdr ? `-H ${q(v.hdr)}` : '', v.data ? `-d ${q(v.data)}` : '', v.out ? `-o ${q(v.out)}` : '', url);
+            } },
+
+        { id: 'git', name: 'Git', cat: 'Dev', desc: 'Everyday git workflows',
+            inputs: [{ id: 'op', label: 'Action', type: 'select', options: opts([['status', 'Status (short)'], ['clone', 'Clone'], ['init', 'Init'], ['addall', 'Stage everything'], ['commit', 'Commit'], ['amend', 'Amend last commit'], ['push', 'Push current branch'], ['pull', 'Pull with rebase'], ['newbranch', 'New branch'], ['switch', 'Switch branch'], ['log', 'Pretty log graph'], ['diff', 'Diff staged'], ['stash', 'Stash'], ['stashpop', 'Stash pop'], ['undo', 'Undo last commit (keep changes)'], ['hard', 'Hard reset to ref'], ['remote', 'Add origin'], ['tag', 'Annotated tag'], ['dry', 'Clean preview (dry run)']]) },
+                { id: 'a', label: 'URL / message / branch / ref', type: 'text', placeholder: 'main' }],
+            build: v => { const a = v.a || '<arg>';
+                return { status: 'git status -sb', clone: `git clone ${a}`, init: 'git init', addall: 'git add -A', commit: `git commit -m ${q(v.a || 'message')}`, amend: 'git commit --amend --no-edit', push: 'git push origin HEAD', pull: 'git pull --rebase',
+                    newbranch: `git switch -c ${a}`, switch: `git switch ${a}`, log: 'git log --oneline --graph --decorate --all -20', diff: 'git diff --staged', stash: `git stash push -m ${q(v.a || 'wip')}`, stashpop: 'git stash pop',
+                    undo: 'git reset --soft HEAD~1', hard: `git reset --hard ${v.a || 'HEAD'}`, remote: `git remote add origin ${a}`, tag: `git tag -a ${a} -m ${q(v.a || 'release')}`, dry: 'git clean -fdn' }[v.op || 'status']; } },
+
+        { id: 'docker', name: 'Docker / Podman', cat: 'Dev', desc: 'Containers and compose',
+            inputs: [{ id: 'e', label: 'Engine', type: 'select', options: opts(['docker', 'podman']) },
+                { id: 'op', label: 'Action', type: 'select', options: opts([['ps', 'List containers'], ['images', 'List images'], ['run', 'Run interactive (throwaway)'], ['rund', 'Run detached with port'], ['logs', 'Follow logs'], ['exec', 'Shell into container'], ['stop', 'Stop container'], ['stopall', 'Stop all running'], ['prune', 'Remove stopped containers'], ['sysprune', 'Prune EVERYTHING unused'], ['build', 'Build image from here'], ['stats', 'Live resource usage'], ['up', 'Compose up'], ['down', 'Compose down'], ['clogs', 'Compose logs']]) },
+                { id: 'img', label: 'Image', type: 'text', placeholder: 'alpine' }, { id: 'name', label: 'Container name', type: 'text', placeholder: 'web' }, { id: 'ports', label: 'Port mapping', type: 'text', placeholder: '8080:80' }],
+            build: v => { const e = v.e || 'docker', i = v.img || 'alpine', n = v.name || 'web';
+                return { ps: `${e} ps -a`, images: `${e} images`, run: `${e} run -it --rm ${i} sh`, rund: `${e} run -d --name ${n} -p ${v.ports || '8080:80'} ${i}`, logs: `${e} logs -f ${n}`, exec: `${e} exec -it ${n} sh`, stop: `${e} stop ${n}`,
+                    stopall: `${e} stop $(${e} ps -q)`, prune: `${e} container prune -f`, sysprune: `${e} system prune -a --volumes`, build: `${e} build -t ${i} .`, stats: `${e} stats`, up: `${e} compose up -d`, down: `${e} compose down`, clogs: `${e} compose logs -f` }[v.op || 'ps']; } },
+
+        { id: 'clamscan', name: 'ClamAV', cat: 'Security', desc: 'Antivirus scanning and signature updates',
+            inputs: [{ id: 'op', label: 'Action', type: 'select', options: opts([['scan', 'Scan a folder'], ['update', 'Update signatures (freshclam)']]) }, { id: 'path', label: 'Scan target', type: 'text', placeholder: '/home/user/Downloads' }],
+            flags: [{ id: 'r', label: 'Recursive (-r)', flag: '-r', on: true }, { id: 'i', label: 'Infected only (-i)', flag: '-i', on: true }, { id: 'bell', label: 'Bell on find', flag: '--bell' }, { id: 'rm', label: 'Remove infected', flag: '--remove' }],
+            build: (v, on) => v.op === 'update' ? 'sudo freshclam' : j('clamscan', FL(on), q(v.path || '/home/$USER')) },
+
+        { id: 'ffmpeg', name: 'ffmpeg', cat: 'Media', desc: 'Convert, compress, trim',
+            inputs: [{ id: 'op', label: 'Action', type: 'select', options: opts([['convert', 'Convert'], ['mp3', 'Extract MP3'], ['compress', 'Compress (H.264, CRF 23)'], ['trim', 'Trim 10s to 30s'], ['gif', 'Make GIF'], ['p720', 'Scale to 720p'], ['mute', 'Remove audio'], ['probe', 'Show file info']]) },
+                { id: 'in', label: 'Input', type: 'text', placeholder: 'input.mp4' }, { id: 'out', label: 'Output', type: 'text', placeholder: 'output.mp4' }],
+            build: v => { const i = q(v.in || 'input.mp4'), o = q(v.out || 'output.mp4');
+                return { convert: `ffmpeg -i ${i} ${o}`, mp3: `ffmpeg -i ${i} -vn -acodec libmp3lame -q:a 2 ${q(v.out || 'output.mp3')}`, compress: `ffmpeg -i ${i} -c:v libx264 -crf 23 -preset veryfast -c:a aac -b:a 128k ${o}`,
+                    trim: `ffmpeg -ss 00:00:10 -to 00:00:30 -i ${i} -c copy ${o}`, gif: `ffmpeg -i ${i} -vf "fps=12,scale=480:-1" ${q(v.out || 'output.gif')}`, p720: `ffmpeg -i ${i} -vf scale=-2:720 -c:a copy ${o}`,
+                    mute: `ffmpeg -i ${i} -an -c:v copy ${o}`, probe: `ffprobe -hide_banner ${i}` }[v.op || 'convert']; } }
+    ];
+
+    /* ==================================================================
+       LIBRARY  [category, label, command | {distro: cmd, default: cmd}, meta?]
+       ================================================================== */
+    const LIB = [
+        ['System', 'OS & distro info', 'cat /etc/os-release'], ['System', 'Kernel & architecture', 'uname -a'], ['System', 'Uptime & load', 'uptime'],
+        ['System', 'Hostname details', 'hostnamectl', { init: 'systemd' }], ['System', 'CPU info', 'lscpu'], ['System', 'Memory usage', 'free -h'], ['System', 'Hardware overview', 'sudo lshw -short'],
+        ['System', 'PCI devices + drivers', 'lspci -k'], ['System', 'USB devices', 'lsusb'], ['System', 'Temperatures', 'sensors'], ['System', 'Boot time breakdown', 'systemd-analyze blame | head -20', { init: 'systemd' }],
+        ['System', 'Reboot', 'sudo reboot'], ['System', 'Shutdown in N minutes', 'sudo shutdown -h +{{minutes:5}}'], ['System', 'Cancel scheduled shutdown', 'sudo shutdown -c'],
+        ['System', 'Reboot into firmware (UEFI)', 'sudo systemctl reboot --firmware-setup', { init: 'systemd' }], ['System', 'Rebuild font cache', 'fc-cache -fv'],
+        ['Files', 'List by size', 'ls -lhS'], ['Files', 'Tree view (2 levels)', 'tree -L 2'], ['Files', 'Biggest files here', 'du -ah . | sort -rh | head -20'],
+        ['Files', 'Huge files on system', "sudo find / -xdev -type f -size +500M -exec ls -lh {} + 2>/dev/null"], ['Files', 'Modified in last day', 'find . -type f -mtime -1'],
+        ['Files', 'Count files', 'find . -type f | wc -l'], ['Files', 'Find duplicate files', 'find . -type f -exec sha256sum {} + | sort | uniq -w64 -d'],
+        ['Files', 'Batch rename extension', 'for f in *.{{from:txt}}; do mv "$f" "${f%.{{from:txt}}}.{{to:md}}"; done'], ['Files', 'Create symlink', 'ln -s {{target}} {{link}}'],
+        ['Files', 'SHA-256 checksum', 'sha256sum {{file}}'], ['Files', 'Show mount tree', 'findmnt'],
+        ['Archives', 'Extract .tar.gz', 'tar -xzvf {{file}}'], ['Archives', 'Extract .zip', 'unzip {{file}}'], ['Archives', 'Zip a folder', 'zip -r {{name}}.zip {{folder}}'], ['Archives', 'Extract .7z', '7z x {{file}}'],
+        ['Text', 'Search text recursively', 'grep -rnI "{{text}}" .'], ['Text', 'Replace in file (in place)', "sed -i 's/{{old}}/{{new}}/g' {{file}}"], ['Text', 'Count lines / words', 'wc -l {{file}}'],
+        ['Text', 'Frequency of lines', 'sort {{file}} | uniq -c | sort -rn'], ['Text', 'Follow a log file', 'tail -f {{file}}'], ['Text', 'Pretty-print JSON', 'jq . {{file}}'], ['Text', 'CSV column view', 'column -s, -t {{file}} | less -S'],
+        ['Disk', 'Disk free (human)', 'df -hT'], ['Disk', 'Folder sizes here', 'du -h --max-depth=1 . | sort -rh'], ['Disk', 'Block devices + FS', 'lsblk -f'], ['Disk', 'Inode usage', 'df -i'],
+        ['Disk', 'SMART health', 'sudo smartctl -a /dev/{{disk:sda}}'], ['Disk', 'Check filesystem (unmounted!)', 'sudo fsck -f /dev/{{partition}}'], ['Disk', 'Mount a partition', 'sudo mount /dev/{{partition:sdb1}} {{mp:/mnt}}'],
+        ['Disk', 'Unmount', 'sudo umount {{mp:/mnt}}'], ['Disk', 'Power off a USB drive safely', 'udisksctl power-off -b /dev/{{disk:sdb}}'], ['Disk', 'TRIM SSDs', 'sudo fstrim -av'],
+        ['Network', 'IP addresses (brief)', 'ip -br a'], ['Network', 'Routes', 'ip r'], ['Network', 'Listening ports', 'sudo ss -tulpn'], ['Network', 'Public IP', 'curl -s ifconfig.me'], ['Network', 'DNS lookup', 'dig +short {{host:example.com}}'],
+        ['Network', 'Trace route', 'mtr -rw {{host:1.1.1.1}}'], ['Network', 'Test a TCP port', 'nc -zv {{host}} {{port:22}}'], ['Network', 'Wi-Fi scan', 'nmcli dev wifi list'], ['Network', 'Wi-Fi connect', 'nmcli dev wifi connect "{{ssid}}" --ask'],
+        ['Network', 'Active connections (NM)', 'nmcli con show --active'], ['Network', 'Scan LAN hosts', 'sudo nmap -sn {{subnet:192.168.1.0/24}}'], ['Network', 'HTTP response headers', 'curl -sI {{url}}'],
+        ['Network', 'Flush DNS cache', 'resolvectl flush-caches', { init: 'systemd' }], ['Network', 'Who owns a port', 'sudo lsof -i :{{port}}'],
+        ['Processes', 'Top CPU processes', 'ps aux --sort=-%cpu | head -15'], ['Processes', 'Top memory processes', 'ps aux --sort=-%mem | head -15'], ['Processes', 'Process tree', 'pstree -p'], ['Processes', 'Kill by name', 'pkill -f {{name}}'],
+        ['Processes', 'Force kill PID', 'kill -9 {{pid}}'], ['Processes', 'Interactive monitor', 'htop'], ['Processes', 'Run detached from terminal', 'nohup {{cmd}} > /dev/null 2>&1 &'], ['Processes', 'New tmux session', 'tmux new -s {{name:main}}'],
+        ['Processes', 'Attach tmux session', 'tmux attach -t {{name:main}}'], ['Processes', 'Repeat a command every 2s', 'watch -n 2 {{cmd}}'], ['Processes', 'Trace syscalls of PID', 'sudo strace -p {{pid}}'],
+        ['Security', 'Who is logged in', 'w'], ['Security', 'Recent logins', 'last -n 20'], ['Security', 'Failed logins', 'sudo lastb -n 20'], ['Security', 'Validate sudoers', 'sudo visudo -c'], ['Security', 'Random password', 'openssl rand -base64 24'],
+        ['Security', 'Encrypt file (GPG)', 'gpg -c {{file}}'], ['Security', 'Decrypt file (GPG)', 'gpg -d {{file}}'], ['Security', 'SUID binaries', 'find / -perm -4000 -type f 2>/dev/null'], ['Security', 'Fail2ban SSH jail', 'sudo fail2ban-client status sshd'],
+        ['Security', 'Rootkit check', 'sudo rkhunter --check'], ['Security', 'Security audit (Lynis)', 'sudo lynis audit system'],
+        ['Security', 'SELinux status', 'getenforce', { d: ['fedora', 'suse'] }], ['Security', 'AppArmor status', 'sudo aa-status', { d: ['debian', 'suse'] }],
+        ['Boot & Kernel', 'Running kernel', 'uname -r'], ['Boot & Kernel', 'Kernel boot parameters', 'cat /proc/cmdline'], ['Boot & Kernel', 'Loaded modules', 'lsmod | head -30'], ['Boot & Kernel', 'Load a module', 'sudo modprobe {{module}}'],
+        ['Boot & Kernel', 'Kernel errors & warnings', 'sudo dmesg --level=err,warn'], ['Boot & Kernel', 'Boot log', 'journalctl -b', { init: 'systemd' }],
+        ['Boot & Kernel', 'Installed kernels', { debian: 'dpkg --list | grep linux-image', fedora: 'rpm -q kernel', arch: 'pacman -Q | grep -E "^linux"', suse: 'rpm -q kernel-default', alpine: 'apk info | grep linux', void: 'xbps-query -l | grep linux', gentoo: 'eselect kernel list', nixos: 'ls /nix/var/nix/profiles | grep system' }],
+        ['Boot & Kernel', 'Regenerate initramfs', { debian: 'sudo update-initramfs -u -k all', fedora: 'sudo dracut --force', arch: 'sudo mkinitcpio -P', suse: 'sudo dracut -f', alpine: 'sudo mkinitfs', void: 'sudo xbps-reconfigure -f linux', gentoo: 'sudo dracut --force' }],
+        ['Boot & Kernel', 'Update GRUB config', { debian: 'sudo update-grub', fedora: 'sudo grub2-mkconfig -o /boot/grub2/grub.cfg', arch: 'sudo grub-mkconfig -o /boot/grub/grub.cfg', suse: 'sudo grub2-mkconfig -o /boot/grub2/grub.cfg', void: 'sudo grub-mkconfig -o /boot/grub/grub.cfg', alpine: 'sudo grub-mkconfig -o /boot/grub/grub.cfg', gentoo: 'sudo grub-mkconfig -o /boot/grub/grub.cfg', nixos: 'sudo nixos-rebuild boot' }],
+        ['Distro tools', 'List repositories', { debian: 'grep -rh ^deb /etc/apt/sources.list /etc/apt/sources.list.d/', fedora: 'dnf repolist', arch: 'grep "^\\[" /etc/pacman.conf', suse: 'zypper lr -u', alpine: 'cat /etc/apk/repositories', void: 'xbps-query -L', gentoo: 'eselect repository list -i', nixos: 'nix-channel --list' }],
+        ['Distro tools', 'Add a PPA', 'sudo add-apt-repository ppa:{{ppa}}', { d: ['debian'] }], ['Distro tools', 'Install a local .deb', 'sudo apt install ./{{file}}.deb', { d: ['debian'] }],
+        ['Distro tools', 'Enable RPM Fusion', 'sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm', { d: ['fedora'] }],
+        ['Distro tools', 'Install a local .rpm', 'sudo dnf install ./{{file}}.rpm', { d: ['fedora', 'suse'] }], ['Distro tools', 'Rank fastest mirrors', 'sudo reflector --country {{country:US}} --latest 20 --sort rate --save /etc/pacman.d/mirrorlist', { d: ['arch'] }],
+        ['Distro tools', 'Build yay (AUR helper)', 'git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si', { d: ['arch'] }], ['Distro tools', 'Fix pacman keyring', 'sudo pacman-key --init && sudo pacman-key --populate', { d: ['arch'] }],
+        ['Distro tools', 'Enable community repo', "sudo sed -i '/community/s/^#//' /etc/apk/repositories && sudo apk update", { d: ['alpine'] }], ['Distro tools', 'Enable nonfree repo', 'sudo xbps-install -S void-repo-nonfree', { d: ['void'] }],
+        ['Distro tools', 'Show USE flags of a package', 'equery uses {{pkg}}', { d: ['gentoo'] }], ['Distro tools', 'Rebuild NixOS config', 'sudo nixos-rebuild switch', { d: ['nixos'] }], ['Distro tools', 'Roll back NixOS', 'sudo nixos-rebuild switch --rollback', { d: ['nixos'] }],
+        ['Distro tools', 'Reconfigure all packages (xbps)', 'sudo xbps-reconfigure -fa', { d: ['void'] }]
+    ];
+
+    function resolveLib() {
+        const out = [];
+        LIB.forEach(([cat, label, cmd, meta]) => {
+            meta = meta || {};
+            if (meta.init && meta.init !== INIT()) return;
+            if (meta.d && !meta.d.includes(distro)) return;
+            const raw = typeof cmd === 'object' ? (cmd[distro] || cmd.default) : cmd;
+            if (!raw) return;
+            out.push({ cat, label, cmd: raw, scoped: typeof cmd === 'object' || !!meta.d });
+        });
+        return out;
+    }
+
+    /* ==================================================================
+       BUFFER / COPY / HISTORY
+       ================================================================== */
+    const bufferEl = $('#bufferInput');
+    function autosize() { bufferEl.style.height = 'auto'; bufferEl.style.height = Math.min(bufferEl.scrollHeight, 112) + 'px'; }
+    function setBuffer(text) {
+        currentBuffer = text; bufferEl.value = text; autosize(); refreshBufferMeta();
+    }
+    function refreshBufferMeta() {
+        $('#cmdLength').textContent = `${bufferEl.value.length} chars`;
+        $('#dangerBar').classList.toggle('hidden', !DANGER.test(bufferEl.value));
+        $('#dangerBar').classList.toggle('flex', DANGER.test(bufferEl.value));
+    }
+    bufferEl.addEventListener('input', () => { bufferTouched = true; currentBuffer = bufferEl.value; autosize(); refreshBufferMeta(); });
+
+    let toastTimer = null;
+    function showToast(msg) {
+        const t = $('#toast'); t.textContent = msg; t.classList.remove('hidden');
+        clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.add('hidden'), 2200);
+    }
+    function copyText(text) {
+        const fallback = () => new Promise((res, rej) => {
+            const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
+            try { document.execCommand('copy') ? res() : rej(); } catch (e) { rej(e); } ta.remove();
+        });
+        return (navigator.clipboard && window.isSecureContext) ? navigator.clipboard.writeText(text).catch(fallback) : fallback();
+    }
+    function addHistory(cmd) {
+        history = history.filter(h => h.cmd !== cmd); history.unshift({ cmd, t: Date.now() }); history = history.slice(0, 60); saveHistory();
+    }
+    function finalize(text, copy) {
+        bufferTouched = true; setBuffer(text);
+        if (copy) { addHistory(text); copyText(text).then(() => showToast('Copied to clipboard')).catch(() => showToast('Buffered. Copy from the action bar')); }
+        if (getActiveTab() === 'history') renderHistory();
+    }
+    function useCommand(raw, copy = true) {
+        const text = P(raw), vars = [];
+        text.replace(VAR_RE, (m, n, d) => { if (!vars.find(x => x.n === n)) vars.push({ n, d: d || '' }); return m; });
+        if (!vars.length) return finalize(text, copy);
+        openVars(text, vars, copy);
+    }
+    function openVars(text, vars, copy) {
+        pending = { text, vars, copy };
+        $('#varFields').innerHTML = vars.map(v => `<div><label class="block text-xs font-semibold mb-1 txt">${esc(v.n)}</label><input type="text" data-var="${esc(v.n)}" value="${esc(v.d)}" class="field font-mono" autocomplete="off" spellcheck="false"></div>`).join('');
+        updateVarPreview(); openModal('varModal');
+        setTimeout(() => { const f = $('#varFields input'); if (f) f.focus(); }, 50);
+    }
+    function fillVars() {
+        const vals = {}; $$('#varFields input').forEach(i => vals[i.dataset.var] = i.value);
+        return pending.text.replace(VAR_RE, (m, n, d) => (vals[n] !== '' && vals[n] != null) ? vals[n] : (d || `<${n}>`));
+    }
+    function updateVarPreview() { if (pending) $('#varPreview').textContent = fillVars(); }
+    $('#varFields').addEventListener('input', updateVarPreview);
+    $('#varFields').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#btnVarApply').click(); } });
+    $('#btnVarApply').addEventListener('click', () => { if (!pending) return; const t = fillVars(), c = pending.copy; pending = null; closeModals(); finalize(t, c); });
+
+    /* ==================================================================
+       THEME / PREFS
+       ================================================================== */
+    function setAccentColor(hex) { lsSet('lt_accent_color', hex); document.documentElement.style.setProperty('--accent-color', hex); }
+    function setAppTheme(t) {
+        if (!['black', 'dark', 'light'].includes(t)) t = 'black';
+        lsSet('lt_app_theme', t); document.documentElement.setAttribute('data-theme', t); document.documentElement.classList.toggle('dark', t !== 'light');
+        const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = t === 'light' ? '#f1f5f9' : t === 'dark' ? '#0f172a' : '#000000';
+    }
+    function setDistro(k, silent) {
+        if (!DISTROS[k]) return;
+        distro = k; lsSet('mapleleaf_distro', k);
+        const D = DISTROS[k];
+        $('#distroDot').style.background = D.color; $('#distroLabel').textContent = D.short;
+        $('#qaDistro').textContent = D.name;
+        if (!bufferTouched) setBuffer(P(pmCmd('full')));
+        if (activeUtil) selectUtility(activeUtil.id, true);
+        renderCurrentView();
+        if (!silent) showToast(`Switched to ${D.name} (${D.pm}, ${D.init})`);
+    }
+
+    /* ==================================================================
+       MODALS
+       ================================================================== */
+    function openModal(id) { $('#' + id).classList.remove('hidden'); }
+    function closeModals() { $$('.modal').forEach(m => m.classList.add('hidden')); pending = null; }
+    document.addEventListener('click', e => { if (e.target.classList && e.target.classList.contains('modal')) closeModals(); });
+    $$('.closeModalBtn').forEach(b => b.addEventListener('click', closeModals));
+
+    function openDistroModal() {
+        $('#distroList').innerHTML = Object.entries(DISTROS).map(([k, D]) => `
+            <button data-act="distro" data-val="${k}" class="w-full text-left p-3 rounded-2xl border ${k === distro ? 'accent-border' : 'bd'} inset flex items-center gap-3 hover:brightness-110 transition">
+                <span class="w-3 h-3 rounded-full flex-none" style="background:${D.color}"></span>
+                <span class="min-w-0 flex-1"><span class="block text-sm font-bold txt">${esc(D.name)}</span><span class="block text-[11px] muted truncate">${esc(D.eg)}</span></span>
+                <span class="text-right flex-none"><span class="tag">${D.pm}</span> <span class="tag">${D.init}</span></span>
+                ${k === distro ? ic('check', 'accent-text') : ''}
+            </button>`).join('');
+        openModal('distroModal');
+    }
+
+    function openSnippetModal(id, prefill) {
+        const s = id ? snippets.find(x => x.id === id) : null;
+        $('#cmdModalTitle').textContent = s ? 'Edit Snippet' : 'Add Snippet';
+        $('#editingCmdId').value = s ? s.id : '';
+        $('#cmdLabelInput').value = s ? s.label : (prefill && prefill.label) || '';
+        $('#cmdStringInput').value = s ? s.command : (prefill && prefill.command) || currentBuffer || '';
+        $('#cmdCategoryInput').value = s ? s.category : (prefill && prefill.category) || 'General';
+        $('#cmdFavInput').checked = s ? !!s.favorite : !!(prefill && prefill.favorite);
+        $('#cmdDistroInput').innerHTML = `<option value="">All distros</option>` + Object.entries(DISTROS).map(([k, D]) => `<option value="${k}">${esc(D.name)}</option>`).join('');
+        $('#cmdDistroInput').value = s ? (s.distro || '') : (prefill && prefill.distro) || '';
+        openModal('cmdModal'); setTimeout(() => $('#cmdLabelInput').focus(), 50);
+    }
+    $('#btnSaveCmd').addEventListener('click', () => {
+        const label = $('#cmdLabelInput').value.trim(), command = $('#cmdStringInput').value.trim();
+        const category = $('#cmdCategoryInput').value.trim() || 'General', d = $('#cmdDistroInput').value, fav = $('#cmdFavInput').checked, id = $('#editingCmdId').value;
+        if (!label || !command) return showToast('Enter both a label and a command');
+        if (id) { const s = snippets.find(x => x.id === id); if (s) Object.assign(s, { label, command, category, distro: d, favorite: fav }); }
+        else snippets.push({ id: 'cmd_' + Date.now(), label, command, category, distro: d, favorite: fav });
+        saveSnippets(); closeModals(); renderCurrentView(); showToast('Snippet saved');
+    });
+
+    /* ==================================================================
+       RENDERING
+       ================================================================== */
+    function getActiveTab() { const a = $('#navTabs .active'); return a ? a.dataset.tab : 'favorites'; }
+    function setupTabs() {
+        const tabs = $$('#navTabs button');
+        tabs.forEach(tab => tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active')); tab.classList.add('active');
+            $$('.tab-view').forEach(v => v.classList.add('hidden'));
+            $('#view-' + tab.dataset.tab).classList.remove('hidden');
+            renderCurrentView();
+        }));
+        $('#searchInput').addEventListener('input', renderCurrentView);
+    }
+    const matches = (f, ...fields) => !f || fields.some(x => String(x || '').toLowerCase().includes(f));
+
+    function card(o) {
+        const acts = (o.acts || []).map(([a, icon, title, cls]) => `<button data-act="${a}" class="p-2 text-sm ${cls || 'muted hover:opacity-70'}" title="${title}">${ic(icon)}</button>`).join('');
+        return `<div class="card panel-bg border bd p-3.5 rounded-2xl shadow-sm flex items-center justify-between gap-3 cursor-pointer transition" data-act="use" data-cmd="${esc(o.cmd)}" data-label="${esc(o.label)}" data-cat="${esc(o.cat)}" data-scoped="${o.scoped ? 1 : ''}" ${o.id ? `data-id="${esc(o.id)}"` : ''}>
+            <div class="min-w-0 flex-1">
+                <div class="flex items-center flex-wrap gap-1.5"><span class="text-xs font-bold txt">${esc(o.label)}</span><span class="tag">${esc(o.cat)}</span>${o.badge ? `<span class="tag" style="color:${o.badgeColor || 'inherit'}">${esc(o.badge)}</span>` : ''}${DANGER.test(o.cmd) ? `<span class="tag text-red-400">danger</span>` : ''}</div>
+                <p class="text-xs font-mono accent-text truncate mt-1">${esc(o.cmd.split('\n')[0])}</p>
+            </div>
+            <div class="flex items-center gap-0.5">${acts}</div></div>`;
+    }
+    const snipCard = s => card({ label: s.label, cat: s.category, cmd: s.command, id: s.id, badge: s.distro ? DISTROS[s.distro]?.short : '', badgeColor: s.distro ? DISTROS[s.distro]?.color : '',
+        acts: [['fav', 'star', 'Star', s.favorite ? 'text-amber-400' : 'muted hover:text-amber-400'], ['toscript', 'list-plus', 'Add to script'], ['edit', 'pencil', 'Edit'], ['del', 'trash-2', 'Delete', 'muted hover:text-red-500']] });
+
+    function renderCurrentView() {
+        const tab = getActiveTab(), f = $('#searchInput').value.toLowerCase().trim();
+        ({ favorites: renderFavorites, utilities: renderUtilitiesSidebar, library: renderLibrary, custom: renderSnippets, script: renderScript, history: renderHistory }[tab])(f);
+    }
+
+    function renderFavorites(f = '') {
+        const quick = [['full', 'Full upgrade'], ['check', 'Check updates'], ['install', 'Install…'], ['remove', 'Remove…'], ['search', 'Search…'], ['autoremove', 'Autoremove'], ['clean', 'Clean cache'], ['list', 'List installed']]
+            .map(([op, label]) => { const t = PM[distro][op]; return t ? [label, t.replace(/\{pkg\}/g, '{{pkg}}')] : null; }).filter(Boolean);
+        ['restart', 'enable', 'status', 'failed'].forEach(op => quick.push([{ restart: 'Restart service…', enable: 'Enable service…', status: 'Service status…', failed: 'Failed services' }[op], SV[INIT()][op].replace(/\{svc\}/g, '{{service}}')]));
+        $('#quickGrid').innerHTML = quick.filter(([l, c]) => matches(f, l, c)).map(([l, c]) => `<button data-act="use" data-cmd="${esc(c)}" class="btn btn-ghost !justify-start !py-2.5 text-left"><span class="truncate">${esc(l)}</span></button>`).join('');
+        const favs = snippets.filter(s => s.favorite && matches(f, s.label, s.command, s.category));
+        $('#itemCount').textContent = favs.length + quick.length;
+        $('#favoritesList').innerHTML = favs.length ? favs.map(snipCard).join('') : `<div class="text-center py-8 muted text-xs">No starred snippets yet. Star anything from the Library or Snippets tabs.</div>`;
+    }
+
+    function renderSnippets(f = '') {
+        $('#snipFilterChip').classList.toggle('on', snipOnly);
+        $('#snipFilterChip').textContent = snipOnly ? `Only ${DISTROS[distro].short} + universal` : 'Showing all distros';
+        const list = snippets.filter(s => (!snipOnly || !s.distro || s.distro === distro) && matches(f, s.label, s.command, s.category));
+        $('#itemCount').textContent = list.length;
+        $('#customList').innerHTML = list.length ? list.map(snipCard).join('') : `<div class="text-center py-12 muted text-xs">No saved snippets.</div>`;
+    }
+
+    function renderLibrary(f = '') {
+        const all = resolveLib();
+        const cats = ['All', ...new Set(all.map(x => x.cat))];
+        if (!cats.includes(libCat)) libCat = 'All';
+        $('#libChips').innerHTML = cats.map(c => `<button data-act="libcat" data-val="${esc(c)}" class="chip ${c === libCat ? 'on' : ''}">${esc(c)}</button>`).join('');
+        const list = all.filter(x => (libCat === 'All' || x.cat === libCat) && matches(f, x.label, x.cmd, x.cat));
+        $('#itemCount').textContent = list.length;
+        $('#libList').innerHTML = list.length ? list.map(x => card({ label: x.label, cat: x.cat, cmd: x.cmd, scoped: x.scoped, badge: x.scoped ? DISTROS[distro].short : '', badgeColor: DISTROS[distro].color,
+            acts: [['toscript', 'list-plus', 'Add to script'], ['save', 'star', 'Save as favorite']] })).join('') : `<div class="text-center py-12 muted text-xs">Nothing matches.</div>`;
+    }
+
+    function renderHistory(f = '') {
+        const list = history.filter(h => matches(f, h.cmd));
+        $('#itemCount').textContent = list.length;
+        $('#historyList').innerHTML = list.length ? list.map(h => card({ label: new Date(h.t).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }), cat: 'copied', cmd: h.cmd,
+            acts: [['toscript', 'list-plus', 'Add to script'], ['save', 'star', 'Save as favorite']] })).join('') : `<div class="text-center py-12 muted text-xs">Copied commands show up here.</div>`;
+    }
+
+    /* ---------- Script builder ---------- */
+    function buildScript() {
+        const steps = script.map(s => s.trim()).filter(Boolean), mode = $('#scriptMode').value;
+        if (!steps.length) return '';
+        if (mode === 'and') return steps.join(' \\\n  && ');
+        if (mode === 'semi') return steps.join('; ');
+        return ($('#scriptStrict').checked ? '#!/usr/bin/env bash\nset -euo pipefail\n\n' : '') + steps.join('\n') + '\n';
+    }
+    function renderScript() {
+        $('#itemCount').textContent = script.length;
+        $('#scriptList').innerHTML = script.length ? script.map((s, i) => `<div class="flex items-start gap-1.5" data-i="${i}">
+            <span class="text-[10px] font-mono muted pt-2.5 w-5 text-right">${i + 1}</span>
+            <textarea data-idx="${i}" rows="${Math.min(6, s.split('\n').length)}" spellcheck="false" class="field font-mono !text-xs accent-text resize-none flex-1">${esc(s)}</textarea>
+            <div class="flex flex-col"><button data-act="sup" class="p-1 muted" title="Up">${ic('arrow-up')}</button><button data-act="sdown" class="p-1 muted" title="Down">${ic('arrow-down')}</button></div>
+            <button data-act="srm" class="p-2 muted hover:text-red-500" title="Remove">${ic('x')}</button></div>`).join('')
+            : `<div class="text-center py-8 muted text-xs">Add commands with the list-plus button anywhere in the app, then export them as a script or a chain.</div>`;
+        $('#scriptOut').textContent = buildScript() || '# Empty';
+    }
+    $('#scriptList').addEventListener('input', e => { const i = e.target.dataset.idx; if (i == null) return; script[i] = e.target.value; saveScript(); $('#scriptOut').textContent = buildScript() || '# Empty'; });
+    $('#scriptMode').addEventListener('change', renderScript); $('#scriptStrict').addEventListener('change', renderScript);
+
+    /* ---------- Generators UI ---------- */
+    function renderUtilitiesSidebar(f = '') {
+        const c = $('#utilityNavList'); c.innerHTML = '';
+        const list = GENERATORS.filter(u => matches(f, u.name, u.desc, u.cat));
+        $('#itemCount').textContent = list.length;
+        GEN_CATS.forEach(cat => {
+            const items = list.filter(u => u.cat === cat); if (!items.length) return;
+            const h = document.createElement('div'); h.className = 'hidden md:block text-[10px] font-bold uppercase tracking-wider muted px-2 pt-2'; h.textContent = cat; c.appendChild(h);
+            items.forEach(u => {
+                const b = document.createElement('button');
+                b.className = `text-left px-3 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap border ${activeUtil && activeUtil.id === u.id ? 'accent-border inset accent-text' : 'border-transparent txt hover:brightness-125'}`;
+                b.dataset.act = 'selgen'; b.dataset.val = u.id; b.textContent = u.name; c.appendChild(b);
+            });
+        });
+    }
+
+    function selectUtility(id, keep) {
+        activeUtil = GENERATORS.find(u => u.id === id) || GENERATORS[0];
+        const st = genState[activeUtil.id] || { vals: {}, on: {} };
+        $('#activeUtilTitle').textContent = activeUtil.name; $('#activeUtilDesc').textContent = activeUtil.desc;
+        const form = $('#utilFormContainer'); form.innerHTML = '';
+        (activeUtil.inputs || []).forEach(inp => {
+            const wrap = document.createElement('div');
+            wrap.innerHTML = `<label class="block text-xs font-semibold txt mb-1">${esc(inp.label)}</label>`;
+            let el;
+            if (inp.type === 'select') {
+                el = document.createElement('select'); el.className = 'field';
+                inp.options.forEach(o => { const op = document.createElement('option'); op.value = o.value; op.textContent = o.label; el.appendChild(op); });
+                el.value = st.vals[inp.id] != null && inp.options.some(o => o.value === st.vals[inp.id]) ? st.vals[inp.id] : (inp.def ? inp.def() : inp.options[0].value);
+                el.addEventListener('change', updateGenOutput);
+            } else {
+                el = document.createElement('input'); el.type = 'text'; el.className = 'field font-mono'; el.placeholder = inp.placeholder || ''; el.spellcheck = false; el.autocapitalize = 'off';
+                el.value = st.vals[inp.id] || ''; el.addEventListener('input', updateGenOutput);
+            }
+            el.id = 'u_inp_' + inp.id; wrap.appendChild(el); form.appendChild(wrap);
+        });
+        if (activeUtil.flags && activeUtil.flags.length) {
+            const head = document.createElement('div'); head.className = 'text-xs font-bold muted pt-2 uppercase tracking-wider'; head.textContent = 'Switches & flags'; form.appendChild(head);
+            const grid = document.createElement('div'); grid.className = 'grid grid-cols-1 sm:grid-cols-2 gap-2';
+            activeUtil.flags.forEach(fl => {
+                const lbl = document.createElement('label'); lbl.className = 'flex items-center gap-2 text-xs txt inset border bd p-2.5 rounded-xl cursor-pointer';
+                const checked = st.on[fl.id] != null ? !!st.on[fl.id] : !!fl.on;
+                lbl.innerHTML = `<input type="checkbox" id="u_flag_${fl.id}" ${checked ? 'checked' : ''} class="w-4 h-4"><span>${esc(fl.label)}</span>`;
+                lbl.querySelector('input').addEventListener('change', updateGenOutput); grid.appendChild(lbl);
+            });
+            form.appendChild(grid);
+        }
+        renderUtilitiesSidebar($('#searchInput').value.toLowerCase().trim());
+        updateGenOutput(!keep && !genState.__touched ? 'silent' : keep ? 'keep' : '');
+    }
+
+    function updateGenOutput(mode) {
+        if (!activeUtil) return;
+        const vals = {}, on = {}, st = { vals: {}, on: {} };
+        (activeUtil.inputs || []).forEach(i => { const el = $('#u_inp_' + i.id); if (el) { vals[i.id] = el.value; st.vals[i.id] = el.value; } });
+        (activeUtil.flags || []).forEach(fl => { const el = $('#u_flag_' + fl.id); if (el) { st.on[fl.id] = el.checked; if (el.checked) on[fl.id] = fl.flag; } });
+        genState[activeUtil.id] = st;
+        const cmd = P(activeUtil.build(vals, on) || '');
+        $('#utilOutputBox').textContent = cmd;
+        if (typeof mode === 'string') { if (mode === 'silent' || mode === 'keep') return; }
+        else genState.__touched = true;
+        bufferTouched = true; setBuffer(cmd);
+    }
+
+    /* ==================================================================
+       ACTION DELEGATION
+       ================================================================== */
+    function snippetFromHost(h, fav) {
+        const s = { id: 'cmd_' + Date.now(), label: h.dataset.label && h.dataset.cat !== 'copied' ? h.dataset.label : h.dataset.cmd.slice(0, 40), command: h.dataset.cmd,
+            category: h.dataset.cat === 'copied' ? 'History' : (h.dataset.cat || 'General'), favorite: fav, distro: h.dataset.scoped ? distro : '' };
+        snippets.push(s); saveSnippets(); return s;
+    }
+    const ACTIONS = {
+        use: (el, h) => h && useCommand(h.dataset.cmd),
+        fav: (el, h) => { const s = snippets.find(x => x.id === h.dataset.id); if (s) { s.favorite = !s.favorite; saveSnippets(); renderCurrentView(); showToast(s.favorite ? 'Starred' : 'Unstarred'); } },
+        save: (el, h) => { snippetFromHost(h, true); showToast('Saved to favorites'); },
+        edit: (el, h) => openSnippetModal(h.dataset.id),
+        del: (el, h) => { if (!confirm('Delete this snippet?')) return; snippets = snippets.filter(x => x.id !== h.dataset.id); saveSnippets(); renderCurrentView(); showToast('Deleted'); },
+        toscript: (el, h) => { script.push(P(h.dataset.cmd)); saveScript(); showToast(`Added to script (${script.length})`); if (getActiveTab() === 'script') renderScript(); },
+        distro: el => { closeModals(); setDistro(el.dataset.val); },
+        libcat: el => { libCat = el.dataset.val; renderLibrary($('#searchInput').value.toLowerCase().trim()); },
+        selgen: el => selectUtility(el.dataset.val),
+        snipfilter: () => { snipOnly = !snipOnly; renderCurrentView(); },
+        gencopy: () => { const t = $('#utilOutputBox').textContent; if (t) useCommand(t); },
+        genscript: () => { script.push($('#utilOutputBox').textContent); saveScript(); showToast(`Added to script (${script.length})`); },
+        gensave: () => openSnippetModal(null, { command: $('#utilOutputBox').textContent, label: activeUtil ? activeUtil.name : '', category: activeUtil ? activeUtil.cat : 'General' }),
+        bufscript: () => { if (!bufferEl.value.trim()) return; script.push(bufferEl.value); saveScript(); showToast(`Added to script (${script.length})`); if (getActiveTab() === 'script') renderScript(); },
+        bufsave: () => openSnippetModal(null, { command: bufferEl.value }),
+        scriptadd: () => ACTIONS.bufscript(),
+        scriptclear: () => { if (script.length && !confirm('Clear all script steps?')) return; script = []; saveScript(); renderScript(); },
+        scriptcopy: () => { const t = buildScript(); if (t) copyText(t).then(() => showToast('Script copied')); },
+        scriptdl: () => { const t = buildScript(); if (!t) return; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([t], { type: 'text/x-shellscript' })); a.download = 'mapleleaf-script.sh'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); },
+        sup: (el) => moveStep(el, -1), sdown: (el) => moveStep(el, 1),
+        srm: (el) => { const i = +el.closest('[data-i]').dataset.i; script.splice(i, 1); saveScript(); renderScript(); },
+        clearhist: () => { history = []; saveHistory(); renderHistory(); },
+        theme: el => setAppTheme(el.dataset.val), accent: el => setAccentColor(el.dataset.val),
+        export: () => {
+            const data = { app: 'mapleleaf-cli', version: 2, snippets, script, history, settings: { theme: lsGet('lt_app_theme'), accent: lsGet('lt_accent_color'), distro, priv } };
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })); a.download = 'mapleleaf-backup.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+        },
+        import: () => $('#importFile').click()
+    };
+    function moveStep(el, d) {
+        const i = +el.closest('[data-i]').dataset.i, k = i + d; if (k < 0 || k >= script.length) return;
+        [script[i], script[k]] = [script[k], script[i]]; saveScript(); renderScript();
+    }
+    document.addEventListener('click', e => {
+        const el = e.target.closest('[data-act]'); if (!el) return;
+        const fn = ACTIONS[el.dataset.act]; if (fn) fn(el, el.closest('[data-cmd]'), e);
+    });
+
+    $('#importFile').addEventListener('change', e => {
+        const file = e.target.files[0]; if (!file) return;
+        const r = new FileReader();
+        r.onload = () => {
+            try {
+                const d = JSON.parse(r.result);
+                if (d.app !== 'mapleleaf-cli' || !Array.isArray(d.snippets)) throw new Error('bad');
+                if (!confirm('Replace your snippets, script and history with this backup?')) return;
+                snippets = d.snippets; script = d.script || []; history = d.history || []; saveSnippets(); saveScript(); saveHistory();
+                if (d.settings) { if (d.settings.theme) setAppTheme(d.settings.theme); if (d.settings.accent) setAccentColor(d.settings.accent); if (d.settings.priv) { priv = d.settings.priv; lsSet('mapleleaf_priv', priv); $('#privSelect').value = priv; } if (d.settings.distro) setDistro(d.settings.distro, true); }
+                renderCurrentView(); showToast('Backup restored');
+            } catch (err) { showToast('That file is not a MapleLeaf backup'); }
+        };
+        r.readAsText(file); e.target.value = '';
+    });
+
+    /* ==================================================================
+       INIT
+       ================================================================== */
+    $('#btnQuickCopy').addEventListener('click', () => { if (bufferEl.value.trim()) useCommand(bufferEl.value); });
+    $('#btnNewCustom').addEventListener('click', () => openSnippetModal(null));
+    $('#openSettingsBtn').addEventListener('click', () => { $('#privSelect').value = priv; openModal('settingsModal'); });
+    $('#distroBtn').addEventListener('click', openDistroModal);
+    $('#privSelect').addEventListener('change', e => { priv = e.target.value; lsSet('mapleleaf_priv', priv); if (!bufferTouched) setBuffer(P(pmCmd('full'))); if (activeUtil) updateGenOutput('keep'); showToast('Privilege prefix updated'); });
+
+    document.addEventListener('keydown', e => {
+        const typing = /INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '');
+        if (e.key === 'Escape') closeModals();
+        else if (e.key === '/' && !typing) { e.preventDefault(); $('#searchInput').focus(); }
+        else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); $('#btnQuickCopy').click(); }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+        setAccentColor(lsGet('lt_accent_color') || '#10b981');
+        setAppTheme(lsGet('lt_app_theme') || 'black');
+        setupTabs();
+        activeUtil = GENERATORS[0];
+        selectUtility(activeUtil.id);
+        setDistro(distro, true);
+        setBuffer(P(pmCmd('full')));
+        renderCurrentView();
+        hydrateIcons();
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+    </script>
+</body>
+</html>

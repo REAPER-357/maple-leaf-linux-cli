@@ -1,0 +1,9 @@
+node_modules/
+package-lock.json
+
+# Ignore native Android build files and generated APKs
+.gradle/
+android/app/build/
+android/build/
+android/.gradle/
+*.apk

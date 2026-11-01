@@ -1,0 +1,25 @@
+{
+  "name": "MapleLeaf CLI",
+  "short_name": "MapleLeaf",
+  "description": "Offline-first Linux command studio: distro-aware generators, library, snippets and script builder",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "any",
+  "categories": ["utilities", "developer tools", "productivity"],
+  "icons": [
+    {
+      "src": "small-icon.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
